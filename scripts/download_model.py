@@ -1,5 +1,6 @@
-"""Download and hash-check the official Qwen3 4B development GGUF."""
+"""Download and hash-check a pinned official Qwen3 Q4_K_M GGUF."""
 
+import argparse
 import hashlib
 import json
 import os
@@ -8,13 +9,19 @@ import shutil
 import subprocess
 import urllib.request
 
-REPO = "Qwen/Qwen3-4B-GGUF"
-REVISION = "bc640142c66e1fdd12af0bd68f40445458f3869b"
-FILENAME = "Qwen3-4B-Q4_K_M.gguf"
+MODELS = {
+    "4B": ("Qwen/Qwen3-4B-GGUF", "bc640142c66e1fdd12af0bd68f40445458f3869b"),
+    "8B": ("Qwen/Qwen3-8B-GGUF", "7c41481f57cb95916b40956ab2f0b139b296d974"),
+}
 ROOT = Path(os.environ["LOCALAPPDATA"]) / "LLMOptimization" / "models"
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--size", choices=MODELS, default="4B")
+    args = parser.parse_args()
+    REPO, REVISION = MODELS[args.size]
+    FILENAME = f"Qwen3-{args.size}-Q4_K_M.gguf"
     ROOT.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(f"https://huggingface.co/api/models/{REPO}/revision/{REVISION}?blobs=true", timeout=60) as response:
         metadata = json.load(response)
@@ -26,7 +33,8 @@ if __name__ == "__main__":
         partial = target.with_suffix(".gguf.partial")
         print(f"Downloading {REPO}@{revision}: {entry['size'] / 1024**3:.2f} GiB", flush=True)
         subprocess.run([
-            "curl.exe", "--fail", "--location", "--retry", "4", "--continue-at", "-",
+            "curl.exe", "--fail", "--location", "--retry", "4", "--retry-all-errors",
+            "--connect-timeout", "30", "--speed-time", "90", "--speed-limit", "1024", "--continue-at", "-",
             "--output", str(partial), f"https://huggingface.co/{REPO}/resolve/{revision}/{FILENAME}",
         ], check=True)
         candidate = partial
@@ -42,5 +50,7 @@ if __name__ == "__main__":
         shutil.copyfileobj(response, stream)
     manifest = {"repository": REPO, "revision": revision, "filename": FILENAME,
                 "sha256": digest, "size_bytes": target.stat().st_size, "license": "Apache-2.0"}
-    (ROOT / "model-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (ROOT / f"{target.stem}.manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    if args.size == "4B":
+        (ROOT / "model-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"Verified model at {target}", flush=True)

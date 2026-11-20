@@ -95,3 +95,25 @@ CUDA archives and model weights are checked against publisher SHA-256 values. Th
 This is an environment validation, not a controlled performance baseline. Final benchmark comparisons need fixed workload settings, warmup, repeated runs, power/thermal controls and a quality evaluation.
 
 See [the validation record](results/setup-validation.md) for verified tools and remaining profiler permissions.
+
+## Qwen3 8B target and repeatable benchmarks
+
+Qwen3 8B Q4_K_M is the primary optimization target. Keep Qwen3 4B Q4_K_M as the smaller reference model. Download the pinned 8B release and run it with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\download_model.py --size 8B
+.\scripts\run-model.ps1 -ModelSize 8B
+```
+
+`run-model.ps1` now defaults to 8B; pass `-ModelSize 4B` for the development model.
+
+With the laptop plugged in and other GPU applications closed, benchmark each model sequentially:
+
+```powershell
+.\scripts\benchmark.ps1 -ModelSize 4B
+.\scripts\benchmark.ps1 -ModelSize 8B
+```
+
+Each invocation runs 512- and 2048-token prompt processing plus separate 128-token generation tests, with five repetitions after default warmup. Settings are eight CPU threads, batch 512, microbatch 128, Flash Attention on, FP16 K/V cache and 99 requested GPU layers. The verbose log records actual GPU offload. The scripts capture device-wide GPU memory, temperature, utilization, power and clocks every 200 ms and save timestamped JSON, CSV, metadata and local logs under `results/`. Sampling can miss brief allocation peaks. These short synthetic tests do not measure time to first token, model quality or long-context generation speed.
+
+The benchmark wrapper checks power state and requires an explicit `-AllowBattery` flag for a battery-powered run. Results from different power states should be compared separately. The pinned model revision and SHA-256 are saved in model-specific manifests alongside the weights.

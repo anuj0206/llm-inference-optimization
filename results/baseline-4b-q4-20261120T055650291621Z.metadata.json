@@ -1,0 +1,52 @@
+{
+  "finished_at_utc": "2026-11-20T05:57:10.975369+00:00",
+  "power_state": "AC",
+  "command": [
+    "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-bench.exe",
+    "-m",
+    "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-4B-Q4_K_M.gguf",
+    "-ngl",
+    "99",
+    "-p",
+    "512,2048",
+    "-n",
+    "128",
+    "-r",
+    "5",
+    "-t",
+    "8",
+    "-b",
+    "512",
+    "-ub",
+    "128",
+    "-fa",
+    "on",
+    "-ctk",
+    "f16",
+    "-ctv",
+    "f16",
+    "-o",
+    "json",
+    "-v"
+  ],
+  "warmup": "llama-bench default enabled",
+  "offloaded_layers": [
+    [
+      "37",
+      "37"
+    ]
+  ],
+  "model_manifest": {
+    "repository": "Qwen/Qwen3-4B-GGUF",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "filename": "Qwen3-4B-Q4_K_M.gguf",
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "size_bytes": 2497280256,
+    "license": "Apache-2.0"
+  },
+  "telemetry_sample_period_ms": 200,
+  "telemetry_sample_count": 92,
+  "device_peak_memory_used_mib": 2853.0,
+  "device_max_temperature_c": 58.0,
+  "telemetry_note": "Device-wide sampled memory, not an allocator-exact peak; may miss sub-200 ms spikes. Includes model loading and warmup."
+}
