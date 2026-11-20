@@ -41,6 +41,11 @@ def inspect():
                     "ninja": [str(p) for p in root.glob("Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe")],
                 })
     cuda_root = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "NVIDIA GPU Computing Toolkit/CUDA"
+    local_root = Path(os.environ.get("LOCALAPPDATA", ".")) / "LLMOptimization"
+    local_cuda = list((local_root / "cuda").glob("*/bin/nvcc.exe"))
+    profilers = {}
+    for name, executable in (("nsight_compute", "ncu.exe"), ("nsight_systems", "nsys.exe")):
+        profilers[name] = [str(p) for p in (local_root / "tools" / name).rglob(executable)]
     gpu_tool = shutil.which("nvidia-smi")
     gpu = run_local([gpu_tool, "--query-gpu=name,memory.total,driver_version,compute_cap", "--format=csv"]) if gpu_tool else None
     return {
@@ -52,6 +57,10 @@ def inspect():
         "tools_on_path": tools,
         "visual_studio": visual_studio,
         "cuda_compilers": [str(p) for p in cuda_root.glob("*/bin/nvcc.exe")],
+        "local_cuda_compilers": [str(p) for p in local_cuda],
+        "local_profilers": profilers,
+        "llama_cli": str(local_root / "build/llama-cuda/bin/llama-cli.exe"),
+        "llama_cli_exists": (local_root / "build/llama-cuda/bin/llama-cli.exe").is_file(),
         "gpu": gpu,
         "note": "Inventory only; compiler compatibility and CUDA builds are not yet verified.",
     }

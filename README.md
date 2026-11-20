@@ -63,4 +63,35 @@ Upstream references: [llama.cpp build instructions](https://github.com/ggml-org/
 - `results/`: benchmark artifacts; local environment reports are ignored.
 - `external/`, `build/`, `models/`: ignored locations for future source, build output and weights.
 
-No inference baseline has been run yet.
+## Native Windows development environment
+
+The online setup uses user-local files under `%LOCALAPPDATA%\LLMOptimization`, outside OneDrive. The installed NVIDIA display driver is retained. CUDA 13.5 supports the existing MSVC 19.51 compiler; this build targets native `sm_89` code for the RTX 4050, allowing execution under CUDA 13.x minor-version compatibility rather than relying on newer PTX JIT support. New toolkit features or profiling may still require a newer driver.
+
+To open a development shell and build:
+
+```powershell
+. .\scripts\enter-dev.ps1
+.\scripts\verify-cuda.ps1
+.\scripts\build-llama.ps1
+.\scripts\run-model.ps1
+```
+
+The shell setup applies to the current PowerShell process. It supplies MSVC, CUDA, CMake, Ninja and installed profiler paths without modifying global PATH.
+
+To reproduce the downloads on another Windows machine with compatible Visual Studio Build Tools and an NVIDIA driver:
+
+```powershell
+.\scripts\setup-offline.ps1
+uv pip install --python .venv\Scripts\python.exe -r requirements-dev.txt
+.\.venv\Scripts\python.exe scripts\install_cuda.py --profilers
+git clone https://github.com/ggml-org/llama.cpp.git "$env:LOCALAPPDATA\LLMOptimization\llama.cpp"
+git -C "$env:LOCALAPPDATA\LLMOptimization\llama.cpp" checkout 8bf88ba9368e70fe3ba1b0001b34e70ffc713716
+.\.venv\Scripts\python.exe scripts\download_model.py
+.\scripts\build-llama.ps1
+```
+
+CUDA archives and model weights are checked against publisher SHA-256 values. The model's source revision, size, hash and license are saved beside the weights. The CUDA manifest and component licenses are retained in the toolkit directory. The build disables HTTPS support; use the download script for remote models and local paths for inference.
+
+This is an environment validation, not a controlled performance baseline. Final benchmark comparisons need fixed workload settings, warmup, repeated runs, power/thermal controls and a quality evaluation.
+
+See [the validation record](results/setup-validation.md) for verified tools and remaining profiler permissions.

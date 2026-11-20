@@ -12,3 +12,4 @@ models/
 *.nsys-rep
 *.ncu-rep
 results/environment*.json
+results/*.log
