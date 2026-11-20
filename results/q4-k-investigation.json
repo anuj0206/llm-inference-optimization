@@ -1,0 +1,364 @@
+{
+  "source_commit": "8bf88ba9368e70fe3ba1b0001b34e70ffc713716",
+  "model_metadata": {
+    "general.architecture": "qwen3",
+    "qwen3.block_count": 36,
+    "qwen3.context_length": 40960,
+    "qwen3.embedding_length": 4096,
+    "qwen3.feed_forward_length": 12288,
+    "qwen3.attention.head_count": 32,
+    "qwen3.attention.head_count_kv": 8,
+    "qwen3.rope.freq_base": 1000000.0,
+    "qwen3.attention.layer_norm_rms_epsilon": 9.999999974752427e-07,
+    "qwen3.attention.key_length": 128,
+    "qwen3.attention.value_length": 128,
+    "general.file_type": 15
+  },
+  "header_bytes_read": 5956403,
+  "tensor_count": 399,
+  "tensor_type_counts": {
+    "14": 37,
+    "0": 145,
+    "12": 217
+  },
+  "q4_k_weight_parameters": 6586630144,
+  "q4_k_storage_bytes": 3704979456,
+  "hardware_driver_attributes": {
+    "peak_memory_clock_khz": 8001000,
+    "memory_bus_width_bits": 96,
+    "l2_cache_bytes": 25165824,
+    "multiprocessors": 20,
+    "theoretical_peak_memory_bandwidth_gb_s": 192.024
+  },
+  "first_microbenchmark_candidate": {
+    "operation": "FFN up/gate matrix-vector products plus SwiGLU",
+    "input_columns": 4096,
+    "output_rows": 12288,
+    "weight_matrix_count": 2,
+    "packed_weight_bytes_per_call": 56623104,
+    "mapping_evidence": "Unique Q4_K tensor shape with 12288 output rows is the FFN up/gate pair. CUDA graph fusion source supports gate/up/SwiGLU fusion. Profile grid 12288 appears exactly 36 times per decode step, matching layer count. Mapping is inferred from these facts; tensor pointers were not traced.",
+    "observations": {
+      "0": {
+        "mean_profiled_kernel_us": 307.91169878472226,
+        "percent_of_summed_kernel_time": 41.32927229047554,
+        "weight_bytes_over_profiled_time_gb_s": 183.89396772997665,
+        "calls_per_decode_step": 36.0
+      },
+      "8192": {
+        "mean_profiled_kernel_us": 308.6048950131233,
+        "percent_of_summed_kernel_time": 32.76884249676882,
+        "weight_bytes_over_profiled_time_gb_s": 183.48090038426682,
+        "calls_per_decode_step": 36.0
+      }
+    }
+  },
+  "tensor_groups": [
+    {
+      "ggml_type": 0,
+      "ggml_dimensions": [
+        128
+      ],
+      "count": 72,
+      "examples": [
+        "blk.0.attn_k_norm.weight",
+        "blk.0.attn_q_norm.weight",
+        "blk.1.attn_k_norm.weight",
+        "blk.1.attn_q_norm.weight"
+      ]
+    },
+    {
+      "ggml_type": 0,
+      "ggml_dimensions": [
+        4096
+      ],
+      "count": 73,
+      "examples": [
+        "output_norm.weight",
+        "blk.0.attn_norm.weight",
+        "blk.0.ffn_norm.weight",
+        "blk.1.attn_norm.weight"
+      ]
+    },
+    {
+      "ggml_type": 12,
+      "ggml_dimensions": [
+        4096,
+        1024
+      ],
+      "count": 54,
+      "examples": [
+        "blk.0.attn_k.weight",
+        "blk.1.attn_k.weight",
+        "blk.2.attn_k.weight",
+        "blk.3.attn_k.weight"
+      ]
+    },
+    {
+      "ggml_type": 12,
+      "ggml_dimensions": [
+        4096,
+        4096
+      ],
+      "count": 72,
+      "examples": [
+        "blk.0.attn_output.weight",
+        "blk.0.attn_q.weight",
+        "blk.1.attn_output.weight",
+        "blk.1.attn_q.weight"
+      ]
+    },
+    {
+      "ggml_type": 12,
+      "ggml_dimensions": [
+        4096,
+        12288
+      ],
+      "count": 72,
+      "examples": [
+        "blk.0.ffn_gate.weight",
+        "blk.0.ffn_up.weight",
+        "blk.1.ffn_gate.weight",
+        "blk.1.ffn_up.weight"
+      ]
+    },
+    {
+      "ggml_type": 12,
+      "ggml_dimensions": [
+        4096,
+        151936
+      ],
+      "count": 1,
+      "examples": [
+        "token_embd.weight"
+      ]
+    },
+    {
+      "ggml_type": 12,
+      "ggml_dimensions": [
+        12288,
+        4096
+      ],
+      "count": 18,
+      "examples": [
+        "blk.4.ffn_down.weight",
+        "blk.5.ffn_down.weight",
+        "blk.7.ffn_down.weight",
+        "blk.8.ffn_down.weight"
+      ]
+    },
+    {
+      "ggml_type": 14,
+      "ggml_dimensions": [
+        4096,
+        1024
+      ],
+      "count": 18,
+      "examples": [
+        "blk.0.attn_v.weight",
+        "blk.1.attn_v.weight",
+        "blk.2.attn_v.weight",
+        "blk.3.attn_v.weight"
+      ]
+    },
+    {
+      "ggml_type": 14,
+      "ggml_dimensions": [
+        4096,
+        151936
+      ],
+      "count": 1,
+      "examples": [
+        "output.weight"
+      ]
+    },
+    {
+      "ggml_type": 14,
+      "ggml_dimensions": [
+        12288,
+        4096
+      ],
+      "count": 18,
+      "examples": [
+        "blk.0.ffn_down.weight",
+        "blk.1.ffn_down.weight",
+        "blk.2.ffn_down.weight",
+        "blk.3.ffn_down.weight"
+      ]
+    }
+  ],
+  "q4_profile_launches": {
+    "0": [
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          12288,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 768,
+        "dynamic_shared_bytes": 0,
+        "calls": 4608,
+        "total_ms": 1418.857108,
+        "mean_us": 307.91169878472226,
+        "min_us": 305.116,
+        "max_us": 362.78
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          4096,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 768,
+        "dynamic_shared_bytes": 0,
+        "calls": 6784,
+        "total_ms": 597.759923,
+        "mean_us": 88.11319619693396,
+        "min_us": 51.935,
+        "max_us": 309.724
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          4096,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 384,
+        "dynamic_shared_bytes": 0,
+        "calls": 4736,
+        "total_ms": 247.528512,
+        "mean_us": 52.26531081081082,
+        "min_us": 51.519,
+        "max_us": 201.886
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          1024,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 384,
+        "dynamic_shared_bytes": 0,
+        "calls": 6912,
+        "total_ms": 99.729448,
+        "mean_us": 14.42845023148148,
+        "min_us": 13.919,
+        "max_us": 16.352
+      }
+    ],
+    "8192": [
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          12288,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 768,
+        "dynamic_shared_bytes": 0,
+        "calls": 4572,
+        "total_ms": 1410.94158,
+        "mean_us": 308.6048950131233,
+        "min_us": 304.989,
+        "max_us": 350.844
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          4096,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 768,
+        "dynamic_shared_bytes": 0,
+        "calls": 6731,
+        "total_ms": 598.096007,
+        "mean_us": 88.85693165948595,
+        "min_us": 52.255,
+        "max_us": 448.571
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          4096,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 384,
+        "dynamic_shared_bytes": 0,
+        "calls": 4699,
+        "total_ms": 245.980283,
+        "mean_us": 52.34736816343903,
+        "min_us": 51.487,
+        "max_us": 63.935
+      },
+      {
+        "kernel": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "grid": [
+          1024,
+          1,
+          1
+        ],
+        "block": [
+          32,
+          4,
+          1
+        ],
+        "registers_per_thread": 56,
+        "static_shared_bytes": 384,
+        "dynamic_shared_bytes": 0,
+        "calls": 6858,
+        "total_ms": 99.064622,
+        "mean_us": 14.445118401866434,
+        "min_us": 13.824,
+        "max_us": 16.32
+      }
+    ]
+  },
+  "limitations": "GGUF dimensions list input dimension first. Launch geometry alone cannot uniquely identify a tensor, fusion operation, gate pointer, or memory bottleneck. Profile times include diagnostic overhead."
+}

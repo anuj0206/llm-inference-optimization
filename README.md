@@ -164,3 +164,9 @@ For an individual Q8-cache run:
 ```
 
 The default cache remains FP16. `context-sweep.ps1` also accepts `-CacheType q8_0`. Filenames distinguish quantized-cache runs, and the result viewer includes the cache type.
+
+## Q4_K kernel investigation
+
+The first concrete kernel target is the fused feed-forward up/gate/SwiGLU operation: two Q4_K matrices, each with 12288 output rows and 4096 input columns, processing one token. Its observed mean kernel latency is about 308 microseconds, and it accounts for about 41.3% of selected short-context GPU kernel time. See [the investigation and microbenchmark specification](docs/q4-k-investigation.md) and [the detailed tensor/launch inventory](results/q4-k-investigation.json).
+
+The investigation is read-only. No runtime/kernel change or speedup is claimed. Reproduce it with `.\.venv\Scripts\python.exe scripts\inspect-q4-k.py`.
