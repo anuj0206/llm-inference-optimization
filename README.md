@@ -117,3 +117,27 @@ With the laptop plugged in and other GPU applications closed, benchmark each mod
 Each invocation runs 512- and 2048-token prompt processing plus separate 128-token generation tests, with five repetitions after default warmup. Settings are eight CPU threads, batch 512, microbatch 128, Flash Attention on, FP16 K/V cache and 99 requested GPU layers. The verbose log records actual GPU offload. The scripts capture device-wide GPU memory, temperature, utilization, power and clocks every 200 ms and save timestamped JSON, CSV, metadata and local logs under `results/`. Sampling can miss brief allocation peaks. These short synthetic tests do not measure time to first token, model quality or long-context generation speed.
 
 The benchmark wrapper checks power state and requires an explicit `-AllowBattery` flag for a battery-powered run. Results from different power states should be compared separately. The pinned model revision and SHA-256 are saved in model-specific manifests alongside the weights.
+
+## Context-depth experiment
+
+Measure how generation changes as the KV cache fills:
+
+```powershell
+.\scripts\context-sweep.ps1 -ModelSize 8B
+.\scripts\show-context-results.ps1 -ModelSize 8B
+```
+
+The default sweep runs sequentially at populated context depths 0, 512, 1024, 2048 and 4096 tokens. Each point generates 128 tokens five times, with the same Q4_K_M weights, FP16 K/V cache, Flash Attention and batch settings as the baseline. llama-bench's `-d` prefill and context-state restoration happen outside the generation timer. This isolates decode speed after a populated prefix; it does not measure time to first token. The prefix is a synthetic benchmark workload, not a quality evaluation or a real conversation.
+
+Each point runs in its own process and saves `context-8b-q4-d<depth>-<UTC timestamp>` artifacts. Metadata records actual allocated context length and the runtime's CUDA KV-cache buffer size. The allocation accommodates depth plus 128 generated tokens and runtime rounding, so allocated tokens can exceed the populated depth. Device-wide memory sampling includes model loading, prefix processing, cache restoration and generation; the reported peak is not generation-only or an allocator-exact peak. The result viewer shows all completed points, including repeats, with UTC timestamps and power state.
+
+Keep the laptop on AC power and avoid concurrent GPU applications or benchmarks. Inspect sampled peak memory, actual GPU offload in the logs, temperatures, and throughput variability before extending the sweep. A sudden speed collapse near capacity can indicate memory pressure or fallback and warrants investigation. A default-warmup short sweep does not establish thermal steady-state performance. The script stops if a run fails; it retains the failure log and preceding completed results.
+
+To run one point, or extend to a longer depth after inspecting headroom:
+
+```powershell
+.\scripts\benchmark.ps1 -ModelSize 8B -ContextDepth 2048
+.\scripts\context-sweep.ps1 -ModelSize 8B -Depths 8192
+```
+
+The context-depth path was verified at depth 512 on AC power: 37/37 reported layers offloaded to CUDA, allocated context 768 tokens, CUDA KV cache 108 MiB, sampled peak device memory 4753 MiB, and 36.37 +/- 0.26 generated tokens/sec across five repetitions. Other default sweep points remain to be collected.

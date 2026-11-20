@@ -14,7 +14,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--size", choices=("4B", "8B"), required=True)
     parser.add_argument("--power-state", choices=("AC", "battery", "unknown"), required=True)
+    parser.add_argument("--context-depth", type=int, help="Benchmark only generation after prefilling this many tokens")
     args = parser.parse_args()
+    if args.context_depth is not None and args.context_depth < 0:
+        parser.error("--context-depth must be nonnegative")
     root = Path(os.environ["LOCALAPPDATA"]) / "LLMOptimization"
     model = root / "models" / f"Qwen3-{args.size}-Q4_K_M.gguf"
     executable = root / "build/llama-cuda/bin/llama-bench.exe"
@@ -22,12 +25,14 @@ if __name__ == "__main__":
         raise SystemExit("The model and CUDA benchmark executable must be installed first.")
     results = Path(__file__).resolve().parent.parent / "results"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    prefix = results / f"baseline-{args.size.lower()}-q4-{stamp}"
+    name = f"baseline-{args.size.lower()}-q4" if args.context_depth is None else f"context-{args.size.lower()}-q4-d{args.context_depth}"
+    prefix = results / f"{name}-{stamp}"
     output = prefix.with_suffix(".json")
     log = prefix.with_suffix(".log")
     telemetry = prefix.with_suffix(".gpu.csv")
+    workload = ["-p", "512,2048"] if args.context_depth is None else ["-p", "0", "-d", str(args.context_depth)]
     command = [str(executable), "-m", str(model), "-ngl", "99",
-               "-p", "512,2048", "-n", "128", "-r", "5", "-t", "8",
+               *workload, "-n", "128", "-r", "5", "-t", "8",
                "-b", "512", "-ub", "128", "-fa", "on", "-ctk", "f16",
                "-ctv", "f16", "-o", "json", "-v"]
     monitor_command = ["nvidia-smi", "--query-gpu=timestamp,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,clocks.sm,clocks.mem",
@@ -64,6 +69,9 @@ if __name__ == "__main__":
         "command": command,
         "warmup": "llama-bench default enabled",
         "offloaded_layers": offload,
+        "context_depth": args.context_depth,
+        "allocated_context_tokens": [int(n) for n in re.findall(r"\bn_ctx\s*=\s*(\d+)", log_text)],
+        "cuda_kv_buffer_mib": [float(n) for n in re.findall(r"CUDA0 KV buffer size\s*=\s*([\d.]+) MiB", log_text)],
         "model_manifest": json.loads(model_manifest.read_text(encoding="utf-8")),
         "telemetry_sample_period_ms": 200,
         "telemetry_sample_count": len(rows),
@@ -74,5 +82,5 @@ if __name__ == "__main__":
     prefix.with_suffix(".metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     for row in measurements:
         label = f"pp{row['n_prompt']}" if row["n_prompt"] else f"tg{row['n_gen']}"
-        print(f"{label}: {row['avg_ts']:.2f} +/- {row['stddev_ts']:.2f} tokens/sec", flush=True)
+        print(f"{label} at depth {row['n_depth']}: {row['avg_ts']:.2f} +/- {row['stddev_ts']:.2f} tokens/sec", flush=True)
     print(f"Offload: {offload}; sampled peak device VRAM: {metadata['device_peak_memory_used_mib']} MiB", flush=True)
