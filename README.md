@@ -1,5 +1,7 @@
 # Hardware-Constrained LLM Inference Optimization
 
+**Returning to the project? Start with the [documentation index](docs/README.md), [concept refresher](docs/concepts.md), and [experiment log](docs/experiment-log.md).**
+
 Optimize local LLM inference on an RTX 4050 Laptop GPU with a 6 GB VRAM budget. Use llama.cpp, C++ and CUDA to investigate quantized kernels and KV-cache memory efficiency.
 
 ## Scope
@@ -170,3 +172,15 @@ The default cache remains FP16. `context-sweep.ps1` also accepts `-CacheType q8_
 The first concrete kernel target is the fused feed-forward up/gate/SwiGLU operation: two Q4_K matrices, each with 12288 output rows and 4096 input columns, processing one token. Its observed mean kernel latency is about 308 microseconds, and it accounts for about 41.3% of selected short-context GPU kernel time. See [the investigation and microbenchmark specification](docs/q4-k-investigation.md) and [the detailed tensor/launch inventory](results/q4-k-investigation.json).
 
 The investigation is read-only. No runtime/kernel change or speedup is claimed. Reproduce it with `.\.venv\Scripts\python.exe scripts\inspect-q4-k.py`.
+
+## Isolated Q4_K correctness/performance harness
+
+The project-owned harness now isolates the stock fused feed-forward operation and gates timing on numerical checks. It tests real layers plus adversarial packed weights against a scalar-decoding, double-accumulation CPU reference and an unfused GPU control. Timing uses CUDA events for prepared and quantization-inclusive paths, with one-pair reuse and all-36-layer rotation.
+
+```powershell
+.\scripts\build-q4-bench.ps1
+.\scripts\run-q4-bench.ps1
+.\.venv\Scripts\python.exe scripts\summarize-q4-bench.py
+```
+
+Read the [harness guide](docs/q4-k-benchmark.md) for commands, source provenance, tolerance formulas, timing methodology and limitations. The [latest result summary](results/q4-microbench-summary.md) links timestamped raw data. The stock runtime remains unchanged and this harness does not claim a new optimization.

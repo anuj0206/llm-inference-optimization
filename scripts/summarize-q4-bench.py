@@ -1,0 +1,32 @@
+"""Write a readable summary of a completed isolated Q4_K benchmark run."""
+
+import argparse
+import json
+from pathlib import Path
+
+root = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("result", nargs="?", type=Path)
+args = parser.parse_args()
+path = args.result or sorted(p for p in (root / "results").glob("q4-microbench-20*.json") if not p.name.endswith(".run.json"))[-1]
+data = json.loads(path.read_text(encoding="utf-8-sig"))
+checks = data["correctness"]
+lines = ["# Isolated Q4_K benchmark result", "", f"Raw result: `{path.name}`. Run metadata: `{path.stem}.run.json`.", "",
+         f"Status: **{data['status']}**. Correctness cases: **{sum(c['passed'] for c in checks)}/{len(checks)}**.", "",
+         "The operation is the stock fused up/gate/SwiGLU path, N=12288, K=4096, one token. Weights come from the verified Qwen3 8B Q4_K_M file. No custom optimization is being claimed.", "",
+         "## Numerical validation", "", "| Comparison | Violating values | Worst case relative L2 error |", "| --- | ---: | ---: |"]
+for key in ("up_dot", "gate_dot", "fused_vs_cpu", "fused_vs_unfused"):
+    lines.append(f"| {key} | {sum(c[key]['failures'] for c in checks)} | {max(c[key]['relative_l2_error'] for c in checks):.3g} |")
+lines += ["", f"Checker negative controls detected: **{sum(c['negative_controls_detected'] for c in checks)}**. These are deliberately corrupted host output values, not GPU memory-safety tests.", "",
+          "## CUDA-event timings", "", "Values are microseconds per operation; variability is the standard deviation of 20 batch means, each containing 100 operations after 200 warmup calls.", "",
+          "| Weight access | Activation path | Implementation | Mean us | Median us | Batch-mean SD us |", "| --- | --- | --- | ---: | ---: | ---: |"]
+if all("activation_quantization" in c for c in checks):
+    position = lines.index("## CUDA-event timings")
+    lines[position:position] = [f"Independent activation quantization check violations: **{sum(c['activation_quantization']['failures'] for c in checks)}**. Reconstruction error is recorded separately from kernel error in the raw result.", ""]
+for row in sorted(data["timings"], key=lambda r: (r["mode"], r["path"], r["implementation"])):
+    lines.append(f"| {row['mode']} | {row['path']} | {row['implementation']} | {row['mean_us']:.3f} | {row['median_us']:.3f} | {row['stddev_batch_mean_us']:.3f} |")
+lines += ["", "The unfused implementation is a correctness/control comparison. Stock llama.cpp already performs the fusion. The GPU-stream timer includes launch gaps between queued work; it is not a host-wall-clock or model tokens/sec measurement. Quantization-inclusive and prepared-activation cases are separate runs, so their small difference also contains clock/ordering variability.", "",
+          "One-pair reuse reads a 54 MiB pair; the streaming case rotates 36 distinct real layer pairs totaling 1944 MiB. Neither is the complete inference workload. See [the harness guide](../docs/q4-k-benchmark.md) for correctness bounds, cache methodology and reproduction.", ""]
+summary = root / "results/q4-microbench-summary.md"
+summary.write_text("\n".join(lines), encoding="utf-8")
+print("\n".join(lines))
