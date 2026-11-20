@@ -140,4 +140,27 @@ To run one point, or extend to a longer depth after inspecting headroom:
 .\scripts\context-sweep.ps1 -ModelSize 8B -Depths 8192
 ```
 
-The context-depth path was verified at depth 512 on AC power: 37/37 reported layers offloaded to CUDA, allocated context 768 tokens, CUDA KV cache 108 MiB, sampled peak device memory 4753 MiB, and 36.37 +/- 0.26 generated tokens/sec across five repetitions. Other default sweep points remain to be collected.
+The context-depth path was initially verified at depth 512 on AC power: 37/37 reported layers offloaded to CUDA, allocated context 768 tokens, CUDA KV cache 108 MiB, sampled peak device memory 4753 MiB, and 36.37 +/- 0.26 generated tokens/sec across five repetitions. Completed forward/reverse sweeps and subsequent experiments are recorded below.
+
+## First cache and profiling experiments
+
+The forward and reverse FP16 sweeps are now saved, including a successful 8K run. See [the optimization screen](results/optimization-screen.md) for the FP16/Q8 comparison, profile analysis and output regression checks.
+
+```powershell
+.\scripts\cache-compare.ps1
+.\scripts\profile-decode.ps1 -ContextDepth 0
+.\scripts\profile-decode.ps1 -ContextDepth 8192
+.\.venv\Scripts\python.exe scripts\analyze-profiles.py
+.\scripts\quality-check.ps1
+```
+
+Profiles are diagnostic and include overhead; the analyzer selects repeated decode graphs to exclude loading and prefill. The fixed profile-graph selection is validated for the recorded stock build and should be reviewed for another revision or workload. CUDA traces and SQLite exports stay outside OneDrive. The quality screen scores answer content and requested JSON formatting separately, retains raw outputs, and includes only 12 easy tasks; it is not a broad accuracy evaluation.
+
+For an individual Q8-cache run:
+
+```powershell
+.\scripts\benchmark.ps1 -ModelSize 8B -ContextDepth 8192 -CacheType q8_0
+.\scripts\run-model.ps1 -ModelSize 8B -Context 8192 -CacheType q8_0
+```
+
+The default cache remains FP16. `context-sweep.ps1` also accepts `-CacheType q8_0`. Filenames distinguish quantized-cache runs, and the result viewer includes the cache type.

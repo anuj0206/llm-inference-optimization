@@ -1,6 +1,7 @@
 param(
     [ValidateSet('4B', '8B')][string]$ModelSize = '8B',
     [ValidateRange(0, 32768)][int]$ContextDepth,
+    [ValidateSet('f16', 'q8_0')][string]$CacheType = 'f16',
     [switch]$AllowBattery
 )
 $ErrorActionPreference = 'Stop'
@@ -10,7 +11,7 @@ $powerState = if ($battery.BatteryStatus -eq 1) { 'battery' } elseif ($battery.B
 if ($powerState -eq 'battery' -and -not $AllowBattery) {
     throw 'Plug in the laptop before benchmarking, or use -AllowBattery to label a battery-powered run.'
 }
-$benchmarkArgs = @('--size', $ModelSize.ToUpper(), '--power-state', $powerState)
+$benchmarkArgs = @('--size', $ModelSize.ToUpper(), '--power-state', $powerState, '--cache-type', $CacheType.ToLower())
 if ($PSBoundParameters.ContainsKey('ContextDepth')) {
     $benchmarkArgs += @('--context-depth', $ContextDepth)
 }

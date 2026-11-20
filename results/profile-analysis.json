@@ -1,0 +1,206 @@
+{
+  "0": {
+    "source": "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\profiles\\decode-8b-f16-d0-20261120T161945Z.sqlite",
+    "decode_steps": 128,
+    "selected_graphs": [
+      [
+        2,
+        128
+      ],
+      [
+        5,
+        128
+      ],
+      [
+        8,
+        128
+      ]
+    ],
+    "selection": "Repeated 127/128-step decode graphs only; excludes loading, warmup, prefill and the first captured decode step where needed.",
+    "summed_kernel_time_ms": 3433.056111,
+    "generation_window_ms": 3522.958172,
+    "kernel_interval_coverage_percent": 97.40116403516585,
+    "family_percent_of_summed_kernel_time": {
+      "other": 2.8857146168561414,
+      "quantized_matrix_vector": 95.46361090630016,
+      "attention": 1.6506744768437023
+    },
+    "top_kernels": [
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 11392,
+        "time_ms": 2016.617031,
+        "percent_of_summed_kernel_time": 58.74116139664808
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 2304,
+        "time_ms": 516.027198,
+        "percent_of_summed_kernel_time": 15.031132067622648
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 2432,
+        "time_ms": 397.417139,
+        "percent_of_summed_kernel_time": 11.576191187980266
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 11648,
+        "time_ms": 347.25796,
+        "percent_of_summed_kernel_time": 10.115126254049159
+      },
+      {
+        "name": "void flash_attn_ext_vec<(int)128, (int)1, (ggml_type)1, (ggml_type)1, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long long, int, int, long long, int, int, int, int, long long, long long)",
+        "calls": 4608,
+        "time_ms": 48.644522,
+        "percent_of_summed_kernel_time": 1.4169451482058808
+      },
+      {
+        "name": "quantize_q8_1(const float *, void *, long long, long long, long long, long long, long long, unsigned int, uint3)",
+        "calls": 27776,
+        "time_ms": 41.552303,
+        "percent_of_summed_kernel_time": 1.2103589820993752
+      },
+      {
+        "name": "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, const T8 *, long long, long long, long long, uint3, uint3, uint3, uint3, float)",
+        "calls": 9344,
+        "time_ms": 27.805826,
+        "percent_of_summed_kernel_time": 0.8099438255875335
+      },
+      {
+        "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, float>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+        "calls": 4608,
+        "time_ms": 11.249386,
+        "percent_of_summed_kernel_time": 0.3276784776093629
+      },
+      {
+        "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, __half>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+        "calls": 4608,
+        "time_ms": 11.206825,
+        "percent_of_summed_kernel_time": 0.326438736730569
+      },
+      {
+        "name": "void flash_attn_combine_results<(int)128>(const float *, const float2 *, float *, int)",
+        "calls": 4608,
+        "time_ms": 8.024059,
+        "percent_of_summed_kernel_time": 0.2337293286378214
+      },
+      {
+        "name": "void k_set_rows<float, long long, __half>(const T1 *, const T2 *, T3 *, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, uint3, uint3, uint3, uint3, uint3)",
+        "calls": 4608,
+        "time_ms": 6.599371,
+        "percent_of_summed_kernel_time": 0.1922302108274513
+      },
+      {
+        "name": "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long long, long long, uint3, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long)",
+        "calls": 256,
+        "time_ms": 0.461724,
+        "percent_of_summed_kernel_time": 0.013449357804568665
+      }
+    ],
+    "limitations": "Diagnostic tracing overhead; summed kernel shares are not end-to-end speedup estimates. No hardware counters collected; kernel names/time alone do not establish a bandwidth bottleneck."
+  },
+  "8192": {
+    "source": "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\profiles\\decode-8b-f16-d8192-20261120T162029Z.sqlite",
+    "decode_steps": 127,
+    "selected_graphs": [
+      [
+        56,
+        127
+      ],
+      [
+        59,
+        127
+      ],
+      [
+        62,
+        127
+      ]
+    ],
+    "selection": "Repeated 127/128-step decode graphs only; excludes loading, warmup, prefill and the first captured decode step where needed.",
+    "summed_kernel_time_ms": 4305.741285,
+    "generation_window_ms": 4406.098955,
+    "kernel_interval_coverage_percent": 97.66704576883475,
+    "family_percent_of_summed_kernel_time": {
+      "other": 2.270733203144601,
+      "quantized_matrix_vector": 75.7668727883171,
+      "attention": 21.9623940085383
+    },
+    "top_kernels": [
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 11303,
+        "time_ms": 2009.037587,
+        "percent_of_summed_kernel_time": 46.65950539106764
+      },
+      {
+        "name": "void flash_attn_ext_vec<(int)128, (int)1, (ggml_type)1, (ggml_type)1, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long long, int, int, long long, int, int, int, int, long long, long long)",
+        "calls": 4572,
+        "time_ms": 933.826541,
+        "percent_of_summed_kernel_time": 21.687938944524856
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 2286,
+        "time_ms": 513.064514,
+        "percent_of_summed_kernel_time": 11.915823084572532
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)14, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 2413,
+        "time_ms": 395.178516,
+        "percent_of_summed_kernel_time": 9.177943816008908
+      },
+      {
+        "name": "void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, float *, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, uint3, unsigned int, unsigned int, unsigned int, unsigned int)",
+        "calls": 11557,
+        "time_ms": 345.044905,
+        "percent_of_summed_kernel_time": 8.01360049666802
+      },
+      {
+        "name": "quantize_q8_1(const float *, void *, long long, long long, long long, long long, long long, unsigned int, uint3)",
+        "calls": 27559,
+        "time_ms": 41.053073,
+        "percent_of_summed_kernel_time": 0.9534495986328171
+      },
+      {
+        "name": "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, const T8 *, long long, long long, long long, uint3, uint3, uint3, uint3, float)",
+        "calls": 9271,
+        "time_ms": 27.412836,
+        "percent_of_summed_kernel_time": 0.636657759617343
+      },
+      {
+        "name": "void flash_attn_combine_results<(int)128>(const float *, const float2 *, float *, int)",
+        "calls": 4572,
+        "time_ms": 11.817325,
+        "percent_of_summed_kernel_time": 0.27445506401344316
+      },
+      {
+        "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, __half>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+        "calls": 4572,
+        "time_ms": 11.06747,
+        "percent_of_summed_kernel_time": 0.25703982816050686
+      },
+      {
+        "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, float>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+        "calls": 4572,
+        "time_ms": 11.054958,
+        "percent_of_summed_kernel_time": 0.25674923940535826
+      },
+      {
+        "name": "void k_set_rows<float, long long, __half>(const T1 *, const T2 *, T3 *, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, uint3, uint3, uint3, uint3, uint3)",
+        "calls": 4572,
+        "time_ms": 6.534926,
+        "percent_of_summed_kernel_time": 0.15177237942200236
+      },
+      {
+        "name": "void k_get_rows_float<float, float>(const T1 *, const int *, T2 *, long long, long long, uint3, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long, unsigned long long)",
+        "calls": 254,
+        "time_ms": 0.457053,
+        "percent_of_summed_kernel_time": 0.010614966616602
+      }
+    ],
+    "limitations": "Diagnostic tracing overhead; summed kernel shares are not end-to-end speedup estimates. No hardware counters collected; kernel names/time alone do not establish a bandwidth bottleneck."
+  }
+}

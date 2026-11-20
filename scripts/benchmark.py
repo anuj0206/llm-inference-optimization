@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--size", choices=("4B", "8B"), required=True)
     parser.add_argument("--power-state", choices=("AC", "battery", "unknown"), required=True)
     parser.add_argument("--context-depth", type=int, help="Benchmark only generation after prefilling this many tokens")
+    parser.add_argument("--cache-type", choices=("f16", "q8_0"), default="f16")
     args = parser.parse_args()
     if args.context_depth is not None and args.context_depth < 0:
         parser.error("--context-depth must be nonnegative")
@@ -26,6 +27,8 @@ if __name__ == "__main__":
     results = Path(__file__).resolve().parent.parent / "results"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     name = f"baseline-{args.size.lower()}-q4" if args.context_depth is None else f"context-{args.size.lower()}-q4-d{args.context_depth}"
+    if args.cache_type != "f16":
+        name += f"-kv{args.cache_type}"
     prefix = results / f"{name}-{stamp}"
     output = prefix.with_suffix(".json")
     log = prefix.with_suffix(".log")
@@ -33,8 +36,8 @@ if __name__ == "__main__":
     workload = ["-p", "512,2048"] if args.context_depth is None else ["-p", "0", "-d", str(args.context_depth)]
     command = [str(executable), "-m", str(model), "-ngl", "99",
                *workload, "-n", "128", "-r", "5", "-t", "8",
-               "-b", "512", "-ub", "128", "-fa", "on", "-ctk", "f16",
-               "-ctv", "f16", "-o", "json", "-v"]
+               "-b", "512", "-ub", "128", "-fa", "on", "-ctk", args.cache_type,
+               "-ctv", args.cache_type, "-o", "json", "-v"]
     monitor_command = ["nvidia-smi", "--query-gpu=timestamp,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw,clocks.sm,clocks.mem",
                        "--format=csv,nounits", "--loop-ms=200"]
     print(f"Benchmarking {args.size} on {args.power_state}; results: {output}", flush=True)
@@ -70,6 +73,7 @@ if __name__ == "__main__":
         "warmup": "llama-bench default enabled",
         "offloaded_layers": offload,
         "context_depth": args.context_depth,
+        "cache_type": args.cache_type,
         "allocated_context_tokens": [int(n) for n in re.findall(r"\bn_ctx\s*=\s*(\d+)", log_text)],
         "cuda_kv_buffer_mib": [float(n) for n in re.findall(r"CUDA0 KV buffer size\s*=\s*([\d.]+) MiB", log_text)],
         "model_manifest": json.loads(model_manifest.read_text(encoding="utf-8")),

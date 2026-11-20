@@ -1,0 +1,541 @@
+{
+  "sampling": {
+    "temperature": 0,
+    "seed": 42,
+    "thinking": false
+  },
+  "context_capacity": 8448,
+  "fixture_file": "quality-fixtures.json",
+  "records": [
+    {
+      "cache_type": "f16",
+      "case": "multiply",
+      "expected": 3973,
+      "actual": 3973,
+      "content": "{\"result\": 3973}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 48,
+        "total_tokens": 58,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "percent",
+      "expected": 45,
+      "actual": 45,
+      "content": "{\"result\":45}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 49,
+        "total_tokens": 56,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "alias",
+      "expected": 3,
+      "actual": 3,
+      "content": "{\"len(x)\": 3}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 58,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "slice",
+      "expected": [
+        5,
+        3,
+        1
+      ],
+      "actual": [
+        0,
+        2,
+        4
+      ],
+      "content": "[0, 2, 4]",
+      "correct": false,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 57,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "f16",
+      "case": "loop",
+      "expected": 4,
+      "actual": 3,
+      "content": "{\"count\":3}",
+      "correct": false,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 64,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "substring",
+      "expected": 2,
+      "actual": 2,
+      "content": "{\"result\": 2}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 50,
+        "total_tokens": 57,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "sort",
+      "expected": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "actual": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "content": "[1,2,3,5]",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 54,
+        "total_tokens": 64,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "f16",
+      "case": "logic",
+      "expected": true,
+      "actual": true,
+      "content": "{\"result\": true}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 59,
+        "total_tokens": 65,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "aggregate",
+      "expected": {
+        "total": 31,
+        "count": 3
+      },
+      "actual": {
+        "total": 31,
+        "count": 3
+      },
+      "content": "{\"total\":31,\"count\":3}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 11,
+        "prompt_tokens": 64,
+        "total_tokens": 75,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "f16",
+      "case": "retrieval_start",
+      "expected": "V7Q4M2",
+      "actual": "V7Q4M2",
+      "content": "\"V7Q4M2\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 9,
+        "prompt_tokens": 6870,
+        "total_tokens": 6879,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "f16",
+      "case": "retrieval_middle",
+      "expected": "P8R3T6",
+      "actual": "P8R3T6",
+      "content": "\"access_code\": \"P8R3T6\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 6870,
+        "total_tokens": 6883,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": false,
+      "requested_value_match": false,
+      "normalization": "wrapped bare JSON key/value fragment in braces; extracted single object value"
+    },
+    {
+      "cache_type": "f16",
+      "case": "retrieval_end",
+      "expected": "X2B9K5",
+      "actual": "X2B9K5",
+      "content": "\"X2B9K5\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 9,
+        "prompt_tokens": 6870,
+        "total_tokens": 6879,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "multiply",
+      "expected": 3973,
+      "actual": 3973,
+      "content": "{\"result\": 3973}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 48,
+        "total_tokens": 58,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "percent",
+      "expected": 45,
+      "actual": 45,
+      "content": "{\"result\":45}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 49,
+        "total_tokens": 56,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "alias",
+      "expected": 3,
+      "actual": 3,
+      "content": "{\"len(x)\": 3}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 8,
+        "prompt_tokens": 58,
+        "total_tokens": 66,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "slice",
+      "expected": [
+        5,
+        3,
+        1
+      ],
+      "actual": [
+        0,
+        2,
+        4
+      ],
+      "content": "[0, 2, 4]",
+      "correct": false,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 57,
+        "total_tokens": 67,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "loop",
+      "expected": 4,
+      "actual": 3,
+      "content": "{\"count\":3}",
+      "correct": false,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 64,
+        "total_tokens": 70,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "substring",
+      "expected": 2,
+      "actual": 2,
+      "content": "{\"result\": 2}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 7,
+        "prompt_tokens": 50,
+        "total_tokens": 57,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "sort",
+      "expected": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "actual": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "content": "[1,2,3,5]",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 54,
+        "total_tokens": 64,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "logic",
+      "expected": true,
+      "actual": true,
+      "content": "{\"result\": true}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 59,
+        "total_tokens": 65,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": false,
+      "normalization": "none; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "aggregate",
+      "expected": {
+        "total": 31,
+        "count": 3
+      },
+      "actual": {
+        "total": 31,
+        "count": 3
+      },
+      "content": "{\"total\":31,\"count\":3}",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 11,
+        "prompt_tokens": 64,
+        "total_tokens": 75,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "retrieval_start",
+      "expected": "V7Q4M2",
+      "actual": "V7Q4M2",
+      "content": "\"V7Q4M2\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 9,
+        "prompt_tokens": 6870,
+        "total_tokens": 6879,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "retrieval_middle",
+      "expected": "P8R3T6",
+      "actual": "P8R3T6",
+      "content": "\"access_code\": \"P8R3T6\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 6870,
+        "total_tokens": 6883,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": false,
+      "requested_value_match": false,
+      "normalization": "wrapped bare JSON key/value fragment in braces; extracted single object value"
+    },
+    {
+      "cache_type": "q8_0",
+      "case": "retrieval_end",
+      "expected": "X2B9K5",
+      "actual": "X2B9K5",
+      "content": "\"X2B9K5\"",
+      "correct": true,
+      "usage": {
+        "completion_tokens": 9,
+        "prompt_tokens": 6870,
+        "total_tokens": 6879,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "finish_reason": "stop",
+      "strict_json_valid": true,
+      "requested_value_match": true,
+      "normalization": "none"
+    }
+  ],
+  "limitation": "12 easy exact-answer checks, including three synthetic long-prefix retrieval cases. A regression screen, not a representative accuracy benchmark or proof of quality parity.",
+  "scoring": "Answer correctness permits extracting a single JSON object value or a bare key/value fragment. requested_value_match is the original strict match; strict_json_valid records syntax separately. Raw outputs are retained."
+}

@@ -11,5 +11,8 @@ models/
 *.safetensors
 *.nsys-rep
 *.ncu-rep
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 results/environment*.json
 results/*.log

@@ -7,6 +7,7 @@ $rows = Get-ChildItem -LiteralPath $resultsRoot -Filter "context-$($ModelSize.To
     $data = @(Get-Content -LiteralPath $dataPath -Raw | ConvertFrom-Json)[0]
     [PSCustomObject]@{
         DepthTokens = $data.n_depth
+        Cache = $data.type_k
         AllocatedTokens = ($meta.allocated_context_tokens | Measure-Object -Maximum).Maximum
         TokensPerSec = [math]::Round($data.avg_ts, 2)
         StdDev = [math]::Round($data.stddev_ts, 2)
