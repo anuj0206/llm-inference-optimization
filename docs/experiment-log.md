@@ -45,3 +45,7 @@ Advanced Threat Defense blocked both Nsight Compute attempts. A CUDA-event bench
 ## 2026-11-21 CUPTI memory counters
 
 Added an opt-in, in-process CUPTI build of the isolated stock kernel harness. The elevated run passed the 36 correctness cases and measured 54.010 MiB of DRAM reads and 54.405 MiB of L2 read sectors after the rotation lead-in. The 324 MiB of L1 sector requests and the disassembly point to fewer metadata load instructions as a candidate to test. See the [counter method and results](q4-k-benchmark.md#in-process-memory-counters).
+
+## 2026-11-21 Packed Q4_K header load
+
+Compiled a single 128-bit metadata load per matrix in the fused inner loop. The variant matched stock bitwise across all 36 correctness cases. CUPTI showed 33.3% fewer L1 global-load requests and 11.1% less L1 sector volume, with DRAM reads still about 54 MiB. Prepared-activation latency in the rotating workload was 0.06–0.07% higher across two runs. The [benchmark notes](q4-k-benchmark.md#packed-q4_k-header-load) link to the timings and counter comparison.

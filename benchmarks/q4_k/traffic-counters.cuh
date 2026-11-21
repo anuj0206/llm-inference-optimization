@@ -39,8 +39,7 @@ static json measure_traffic(const std::vector<std::unique_ptr<Weights>> &weights
         "l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum",
         "l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum",
     };
-    json samples = json::array();
-    for (const bool rotate : {true, false}) {
+    auto profile = [&](bool rotate, const char *implementation, auto launch) {
         const char *range_name = rotate ? "after_layer_rotation" : "after_same_pair";
         RangeProfiler profiler(context);
         CUPTI_API_CALL(profiler.EnableRangeProfiler(CUPTI_CACHE_CONTROL_MODE_NONE));
@@ -53,7 +52,7 @@ static json measure_traffic(const std::vector<std::unique_ptr<Weights>> &weights
             // Recreate the cache lead-in on every counter pass. Only the target launch is counted.
             for (std::size_t offset = 1; offset < weights.size(); ++offset) {
                 const Weights &previous = *weights[rotate ? (target_layer + offset) % weights.size() : target_layer];
-                matvec<true>(previous.gpu_up.p, previous.gpu_gate.p, q.p, out.p, previous.n, previous.k, stream);
+                launch(previous.gpu_up.p, previous.gpu_gate.p, q.p, out.p, previous.n, previous.k, stream);
             }
             check(cudaGetLastError());
             check(cudaStreamSynchronize(stream));
@@ -62,7 +61,7 @@ static json measure_traffic(const std::vector<std::unique_ptr<Weights>> &weights
                 CUPTI_API_CALL(profiler.GetDevicePartitionInfo(device_partition));
             }
             CUPTI_API_CALL(profiler.PushRange(range_name));
-            matvec<true>(target.gpu_up.p, target.gpu_gate.p, q.p, out.p, target.n, target.k, stream);
+            launch(target.gpu_up.p, target.gpu_gate.p, q.p, out.p, target.n, target.k, stream);
             check(cudaGetLastError());
             check(cudaStreamSynchronize(stream));
             CUPTI_API_CALL(profiler.PopRange());
@@ -90,12 +89,18 @@ static json measure_traffic(const std::vector<std::unique_ptr<Weights>> &weights
         if (dram_read_bytes == 0 || l2_read_bytes == 0) {
             throw std::runtime_error("CUPTI reported zero traffic for the measured launch");
         }
-        samples.push_back({
-            {"range", range_name}, {"passes", passes}, {"launches_per_range", 1}, {"counters", counters},
+        return json{
+            {"range", range_name}, {"implementation", implementation}, {"passes", passes},
+            {"launches_per_range", 1}, {"counters", counters},
             {"l2_read_sector_bytes", l2_read_bytes},
             {"dram_read_bytes_per_packed_weight_byte", dram_read_bytes / packed_bytes},
             {"l2_read_sector_bytes_per_packed_weight_byte", l2_read_bytes / packed_bytes},
-        });
+        };
+    };
+    json samples = json::array();
+    for (const bool rotate : {true, false}) {
+        samples.push_back(profile(rotate, "stock_fused", &matvec<true>));
+        samples.push_back(profile(rotate, "packed_header_fused", &matvec<true,4,1,true>));
     }
     CUPTI_API_CALL(cuptiDeinitializeProfiler());
     return {

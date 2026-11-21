@@ -45,6 +45,49 @@ if stock_kernel.count(row_expression) != 1:
 two_row_kernel = stock_kernel.replace(row_expression, "2").replace(
     "static __global__ void mul_mat_vec_q(", "static __global__ void mul_mat_vec_q_two_rows(")
 (build / "two_row_mmvq.cuh").write_text(two_row_kernel)
+vecdot = (source / "ggml/src/ggml-cuda/vecdotq.cuh").read_text()
+header_helper = vecdot[
+    vecdot.index("static __device__ __forceinline__ float vec_dot_q4_K_q8_1("):
+    vecdot.index("static __device__ __forceinline__ float vec_dot_q5_K_q8_1(")
+]
+for old, new in (
+    ("vec_dot_q4_K_q8_1(", "vec_dot_q4_K_q8_1_packed_header("),
+    ("""    // branchless so nvcc can hoist this out of the ncols_dst loop
+    const uint16_t * scales = (const uint16_t *)bq4_K->scales;
+    const int j  = bq8_offset/2;
+    const int jm = j & 1;
+
+    const uint32_t s0 = scales[jm + 0];
+    const uint32_t s2 = scales[jm + 2];
+    const uint32_t s4 = scales[jm + 4];""",
+     """    // Each cudaMalloc base and each 144-byte block offset is 16-byte aligned.
+    static_assert(offsetof(block_q4_K, scales) == 4 && offsetof(block_q4_K, qs) == 16);
+    static_assert(sizeof(block_q4_K) % 16 == 0);
+    uint4 header;
+    asm volatile("ld.global.v4.u32 {%0,%1,%2,%3}, [%4];"
+                 : "=r"(header.x), "=r"(header.y), "=r"(header.z), "=r"(header.w)
+                 : "l"(bq4_K) : "memory");
+    const __half2_raw factors = {uint16_t(header.x), uint16_t(header.x >> 16)};
+    const int j = bq8_offset/2;
+    const int shift = (j & 1) * 16;
+    const uint32_t s0 = uint16_t(header.y >> shift);
+    const uint32_t s2 = uint16_t(header.z >> shift);
+    const uint32_t s4 = uint16_t(header.w >> shift);"""),
+    ("sc, m, bq4_K->dm, d8", "sc, m, factors, d8"),
+):
+    if header_helper.count(old) != 1:
+        raise SystemExit(f"Unexpected Q4_K dot helper text: {old!r}")
+    header_helper = header_helper.replace(old, new)
+header_kernel = stock_kernel
+for old, new in (
+    ("static __global__ void mul_mat_vec_q(", "static __global__ void mul_mat_vec_q_packed_header("),
+    ("constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);",
+     "static_assert(type == GGML_TYPE_Q4_K);\n    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = vec_dot_q4_K_q8_1_packed_header;"),
+):
+    if header_kernel.count(old) != 1:
+        raise SystemExit(f"Unexpected kernel text: {old!r}")
+    header_kernel = header_kernel.replace(old, new)
+(build / "packed_header_mmvq.cuh").write_text(header_helper + header_kernel)
 (build / "stock_quantize.cuh").write_text(quant_prefix)
 (build / "llama.cpp-LICENSE").write_bytes((source / "LICENSE").read_bytes())
 spec = importlib.util.spec_from_file_location("inventory", Path(__file__).with_name("inspect-q4-k.py"))
@@ -75,6 +118,7 @@ fixture = {"model_path": str(model), "model_manifest": manifest, "source_commit"
            "generated_two_warp_sha256": hashlib.sha256((build / "two_warp_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_one_warp_sha256": hashlib.sha256((build / "one_warp_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_two_row_sha256": hashlib.sha256((build / "two_row_mmvq.cuh").read_bytes()).hexdigest(),
+           "generated_packed_header_sha256": hashlib.sha256((build / "packed_header_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_quantize_sha256": hashlib.sha256((build / "stock_quantize.cuh").read_bytes()).hexdigest(),
            "n": 12288, "k": 4096, "pairs": pairs}
 (build / "fixture.json").write_text(json.dumps(fixture, indent=2) + "\n")

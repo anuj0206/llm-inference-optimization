@@ -170,3 +170,27 @@ The regular-user run passed all 36 correctness cases before CUPTI reported insuf
 With rotation, DRAM read 10,880 bytes above the 54 MiB weight payload, or 0.019%. L2 read sector volume was 0.75% above the payload. Repeating the same pair gave similar totals. These aggregate measurements leave little evidence of extra DRAM transfers in this launch. The 324 MiB figure counts L1 sector requests, including repeated sector touches. [NVIDIA memory counter definitions](https://docs.nvidia.com/nsight-compute/ProfilingGuide/#l1tex-cache)
 
 Disassembly and the Q4_K dot helper account for all 1,769,472 L1 global-load requests. Each of 12,288 CUDA blocks has four warps, two inner-loop iterations and 18 load instructions per warp per iteration. Six instructions load Q8_1 activation fields shared by both dot products. The other 12 load the up and gate weights. In each iteration, each weight matrix contributes two loads for packed values and four for metadata fields. The three scale/minimum loads and one superblock factor load address the same 16-byte header within each Q4_K block. A candidate can load that header together and unpack the existing fields from registers. Compare L1 requests, register use and elapsed time against stock under the same output checks.
+
+## Packed Q4_K header load
+
+The candidate uses one 16-byte vector load per metadata header and extracts the same scale, minimum and factor bits from four registers. CUDA allocations supply aligned bases and each 144-byte block preserves 16-byte alignment. Both kernels use four warps and one row per block. Disassembly shows one `LDG.E.128` per matrix in the fused loop, and CUDA reports 56 registers per thread for both kernels. [PTX alignment rules](https://docs.nvidia.com/cuda/archive/13.4.2/parallel-thread-execution/index.html)
+
+```powershell
+.\scripts\build-q4-bench.ps1 -Counters
+.\scripts\run-q4-bench.ps1 -HeaderTiming
+```
+
+Header timing uses CUDA events and can run as a regular user. It alternates which implementation goes first across 24 matched pairs, each containing 108 calls. The existing `-Counters` run collects CUPTI metrics for both kernels with both cache lead-ins. Bitwise equality against stock is required for the header candidate in addition to the CPU-reference tolerance.
+
+Both timing runs passed all 36 correctness cases with zero bitwise mismatches.
+
+| 36-layer rotation | Stock (µs) | Packed header (µs) | Latency change |
+| --- | ---: | ---: | ---: |
+| [First run](../results/q4-header-20261121T193215Z.json), prepared activation | 307.768 | 307.942 | +0.06% |
+| [Repeat](../results/q4-header-20261121T193234Z.json), prepared activation | 307.702 | 307.923 | +0.07% |
+| First run, activation quantization included | 311.176 | 311.332 | +0.05% |
+| Repeat, activation quantization included | 311.452 | 311.561 | +0.04% |
+
+The elevated CUPTI run passed the same correctness checks. After rotating through other layers, the candidate reduced L1 global-load requests from 1,769,472 to 1,179,648 per launch, exactly one third. L1 global-load sector volume fell from 324 to 288 MiB, or 11.1%. Both lead-ins gave the same counts for each implementation. DRAM read volume stayed around 54 MiB for both kernels and both lead-ins. [Raw counter comparison](../results/q4-traffic-20261121T193301Z.json)
+
+The packed-header variant stays in the isolated harness. The lower L1 request count gave effectively flat single-token latency on this RTX 4050.
