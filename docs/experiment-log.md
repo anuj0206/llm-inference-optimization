@@ -60,3 +60,26 @@ Enabled llama.cpp's existing `ngram-simple` mode through the opt-in `-NgramSpecu
 | Prose response to project notes | 28.80 tokens/s | 29.11 tokens/s | 2 / 16 |
 
 Greedy token IDs matched across all repeats for both prompts. The device-wide sampled peak was 5,785 MiB in every session. The Python case continued closely repeated helper functions and reached 2.08× the stock decode rate. The single prose case showed little change. Measure other prompts before generalizing the speedup. [Raw prompts, outputs and measurements](../results/ngram-8k-20261121T220522Z.json)
+
+## 2026-11-21 Adaptive n-gram replay
+
+`scripts/replay-ngram.py` replays the saved greedy token sequences. The policy sees the prompt and previously emitted tokens. The replay uses the next stock tokens to count the accepted prefix and advances by that prefix plus the next token from the verifier. It reproduces the measured draft count, accepted count and verification calls for the fixed six-token lookup and eight-token draft limit on both prompts. Counts start after prefill supplies the first output token, so decode without speculation would take 127 target calls for these traces.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\replay-ngram.py results\ngram-8k-20261121T220522Z.json
+```
+
+The backoff prototype keeps the existing six-token lookup. When it yields no draft, it tries four-, three- and two-token suffixes, in that order. For each length, it checks the most recent 16 matching continuations. At each draft position, it requires at least three votes and 75% agreement among the remaining continuations. It proposes at most three tokens from this backoff path.
+
+| Workload | Policy | Drafted | Accepted | Verification calls | Target calls |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Python continuation | Fixed 6/8 | 138 | 72 | 18 | 55 |
+| Python continuation | Fixed 3/4 | 124 | 90 | 31 | 37 |
+| Python continuation | Consensus backoff | 164 | 90 | 27 | 37 |
+| Prose response | Fixed 6/8 | 16 | 2 | 2 | 125 |
+| Prose response | Fixed 3/4 | 60 | 12 | 15 | 115 |
+| Prose response | Consensus backoff | 15 | 8 | 5 | 119 |
+
+These are replay counts from two traces. They exclude GPU verification latency and CPU lookup time. Fixed 3/4 finds more accepted prose drafts and makes three times as many verification calls as consensus backoff. Compare actual time before selecting a policy.
+
+The runtime version can index suffix occurrences per sequence, update the index with confirmed tokens, and propose drafts through the existing llama.cpp interface. Keep the target verifier and KV rollback. Track acceptance separately by suffix length and draft position. For each candidate draft length, estimate the expected number of tokens emitted by the pass and divide by the measured time for lookup, verification and any rollback. Include a zero-length draft as the ordinary decode option. Time both stock and the adaptive policy with the same model and cache on a held-out mix of prose, summarization and code at 8K. Check greedy token IDs, decode tokens/sec, VRAM and the number of accepted drafts. If within-request repeats are scarce, past responses or a domain corpus could supply additional draft candidates. [SuffixDecoding](https://arxiv.org/abs/2411.04975) · [REST](https://aclanthology.org/2024.naacl-long.88/)
