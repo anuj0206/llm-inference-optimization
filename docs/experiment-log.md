@@ -99,3 +99,54 @@ The live comparison uses the archived Python and prose token sequences plus a ne
 | Held-out prose briefing | 28.92 tok/s | 28.62 tok/s | 28.73 tok/s | 0 / 8 |
 
 All greedy token IDs matched stock across the 18 measured requests. The replay reproduced the live draft, acceptance and verification counts for both speculative modes on all three prompts. Every session peaked at 5,785 MiB in the 200 ms GPU samples. The adaptive variant improved the project-review prompt by 5.0% over stock and left the briefing within 1% of stock. The brief produced no accepted drafts. The two prose prompts support a workload-dependent speedup. [Raw results](../results/ngram-adaptive-8k-20261121T223052Z.json)
+
+## 2026-11-21 Research on speculative decoding for prose
+
+The briefing's only draft came from the fixed six-token lookup. Its first proposed token was wrong, and the two-, three-, and four-token lookups at that position also led to the same wrong token. Elsewhere in the briefing, fixed three-token lookup with a four-token draft cap found three accepted tokens in four verification calls. It took 124 target calls in replay versus 127 for the current adaptive policy. This is an offline comparison on one saved trace. [Benchmark replay](../scripts/replay-ngram.py) · [Input trace](../results/ngram-adaptive-8k-20261121T223052Z.json)
+
+- **Rank candidate drafts by expected throughput.** SuffixDecoding compares multiple suffix lengths and uses historical continuation frequencies to estimate how many draft tokens the verifier will accept. It reports 1.33× stock speed on Spec-Bench writing with linear suffix drafts, versus 1.23× for prompt lookup, on Llama-3.1-8B-Instruct with an H100. For our 8K Qwen3 run, time lookup, verification and rollback for short drafts as well as the existing eight-token cap. Use those times and estimated acceptance to choose among candidate drafts and ordinary decode. [SuffixDecoding](https://arxiv.org/html/2411.04975v3)
+- **Query again after each proposed token.** ANPD predicts the next token from the longest available match and repeats the lookup as the draft grows. A variant of our policy could start with a supported continuation and find a new match for the following token when the original matches diverge. Measure the extra lookup time and stop extending when the estimated benefit falls below the verification cost. ANPD evaluated summarization and code generation. [Adaptive N-gram Parallel Decoding](https://aclanthology.org/2024.naacl-industry.2/)
+- **Test more draft sources.** SAM-Decoding combines current-request token matches with an index of prior model responses. Its overall Spec-Bench speedup was 1.84× with the static corpus and 1.64× with only the dynamic index on Vicuna-7B and an RTX A6000. Our pinned llama.cpp already accepts external token statistics in `ngram-cache` through `--lookup-cache-static`. A small local cache of prior Qwen3 responses can test this idea before we build an index. [SAM-Decoding](https://arxiv.org/html/2411.10666) · [llama.cpp n-gram cache](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/docs/speculative.md#n-gram-cache-ngram-cache)
+
+Use fresh prompts for the next live comparison. Include document-grounded summaries and freeform explanations, with the repetitive Python case as a regression check. Compare wall-clock decode tokens per second and confirm greedy token parity at the same 8K prompt depth and FP16 KV precision.
+
+## 2026-11-21 Ranked n-gram drafts and prose cache
+
+The separate adaptive DLL now supports ranked contiguous drafts and a rolling lookup variant. Both use up to 16 prior matches for each suffix length from two through six. The score discounts sparse matches, sums the estimated probabilities that the verifier accepts each successive prefix, and divides expected emitted tokens by the calibrated pass time. A draft must beat ordinary decode by at least 1.5% in that estimate. The rolling variant also tries extending a draft by looking up each newly proposed token in the confirmed history when the best contiguous draft is shorter than four tokens.
+
+Calibration forces draft lengths zero through eight on the archived 8K prose briefing, and uses synthetic rejection to accept zero draft tokens on every pass. This measures the target batch and rejection path with minimal draft lookup. We use the median of two zero-draft measurements and a nondecreasing envelope of the measured times. Actual drafting overhead is included in the live benchmark. [Calibration data](../results/ngram-cost-8k-20261121T225729Z.json)
+
+| Draft tokens | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Calibrated ms per pass | 34.37 | 35.29 | 36.49 | 36.95 | 37.50 | 37.50 | 37.58 | 37.61 | 39.42 |
+
+The live benchmark uses 8,192 input tokens, 128 greedy output tokens, FP16 KV and one CUDA-offloaded slot. It runs two document-grounded prose prompts, two new writing prompts after an unrelated context, and the existing Python continuation. It compares stock, consensus backoff, ranked drafts, ranked drafts with rolling lookup, and the built-in `ngram-cache` with and without a static cache. The latter cache contains bigram continuation counts from 12 independently generated Qwen3 answers on related GPU topics. The cache modes each start a fresh process per prompt because the pinned runtime retains n-gram statistics across requests within a server slot. The second pass reverses mode and prompt order.
+
+```powershell
+.\scripts\build-adaptive-ngram.ps1
+. .\scripts\enter-dev.ps1
+python .\scripts\calibrate-ngram.py
+$calibration = Get-ChildItem -LiteralPath .\results -Filter 'ngram-cost-8k-*.json' |
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+python .\scripts\benchmark-prose-ngram.py $calibration.FullName
+```
+
+| Workload | Stock | Backoff | Ranked | Ranked + rolling | Cache only | Seeded cache |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Python continuation | 28.96 | 85.07 | 100.15 | 100.51 | 112.55 | 113.34 |
+| Project status memo | 28.97 | 37.63 | 42.67 | 42.57 | 40.25 | 41.01 |
+| Plain-English rewrite | 29.07 | 31.92 | 35.87 | 35.80 | 34.90 | 35.89 |
+| Freeform explanation | 28.88 | 31.06 | 31.18 | 31.05 | 32.14 | 32.10 |
+| Fiction opening | 28.94 | 28.90 | 28.15 | 28.12 | 28.33 | 28.29 |
+
+Values are mean decode tokens per second over two runs per mode and prompt. The laptop reported AC power before and after the paired runs. All 60 requests completed with 37/37 layers offloaded and every server session had a sampled peak of 5,785 MiB. The static cache used 35,304 bytes for 1,210 two-token keys from 1,521 generated tokens. [Raw timings, token IDs and corpus](../results/ngram-prose-8k-20261121T230013Z.json)
+
+Ranked drafting improved the memo by 47.3% and the rewrite by 23.4% with exact greedy token parity in both runs. Rolling lookup had the same draft and acceptance counts on all five prompts and stayed within 0.5 tok/s of ranked. Seeding the cache gained 1.9% on the memo and 2.8% on the rewrite over the empty-cache control.
+
+The benchmark ended with `token_mismatch`. All speculative modes diverged on token 21 of the freeform explanation. Ranked, rolling, and both cache variants also diverged on fiction. Backoff and the empty cache diverged on the rewrite. The mismatch positions repeated across both passes. Every mode matched the memo and Python outputs. Treat the timings from mismatching requests as throughput observations with different generated sequences.
+
+The probability probe reproduced the freeform mismatch with the same executable for ordinary decode and ranked drafting. At token 21, ordinary decode ranked ` not` above ` often` by 0.0545 log-probability. Ranked decoding reversed the order by 0.0343. Forced one- and eight-token batches also chose ` often` at the same position with zero accepted draft tokens. This shows the target score order can change under batched execution even when all drafts are rejected. The first operation producing the numerical difference has yet to be isolated. [Probability probe](../results/ngram-parity-8k-20261121T231313Z.json)
+
+```powershell
+python .\scripts\diagnose-ngram-parity.py .\results\ngram-prose-8k-20261121T230013Z.json
+```

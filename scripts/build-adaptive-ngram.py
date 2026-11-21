@@ -44,10 +44,22 @@ def main():
     manifest = target / "build.json"
     manifest.unlink(missing_ok=True)
     policy = project / "benchmarks/ngram/consensus-backoff.inc"
+    ranked = policy.with_name("ranked-draft.inc")
     shutil.copy2(policy, target / policy.name)
+    shutil.copy2(ranked, target / ranked.name)
     source_text = (source / "common/ngram-map.cpp").read_text(encoding="utf-8")
     source_text = replace_once(source_text, '#include "ngram-map.h"',
-                               '#include "ngram-map.h"\n#include "consensus-backoff.inc"')
+                               '#include "ngram-map.h"\n#include "consensus-backoff.inc"\n#include "ranked-draft.inc"')
+    source_text = replace_once(source_text, "    // Simple implementation of self-speculative decoding",
+                               """    static const ngram_experiment experiment;
+    if (experiment.probe_length) {
+        return llama_tokens(experiment.probe_length, sampled);
+    }
+    if (experiment.ranked) {
+        return ngram_ranked_draft(experiment, tokens, sampled);
+    }
+
+    // Simple implementation of self-speculative decoding""")
     for condition in (
         "cur_len <= static_cast<size_t>(n_draft_min + n_draft_max + 1)",
         "match_pos == 0",
@@ -93,6 +105,7 @@ def main():
     manifest.write_text(json.dumps({
         "source_commit": revision,
         "policy_sha256": sha256(policy),
+        "ranked_policy_sha256": sha256(ranked),
         "stock_common_sha256": sha256(stock_bin / "llama-common.dll"),
         "adaptive_common_sha256": sha256(binary / "llama-common.dll"),
     }, indent=2) + "\n", encoding="utf-8")
