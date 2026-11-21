@@ -1,5 +1,6 @@
 """Compare unchanged Qwen3 8B with and without n-gram speculative decoding."""
 
+import argparse
 import csv
 import json
 import os
@@ -21,7 +22,7 @@ DRAFT_METRICS = {
 }
 
 
-def prompts(base, project):
+def prompts(base, project, *, held_out=False):
     def tokenize(content):
         return request(base, "/tokenize", {"content": content, "add_special": False})["tokens"]
 
@@ -41,18 +42,28 @@ def prompts(base, project):
         "README.md", "docs/concepts.md", "docs/q4-k-benchmark.md", "docs/rtx4050-tuning.md",
     ))
     marker = "NG_BENCHMARK_CONTEXT_PLACEHOLDER"
-    template = request(base, "/apply-template", {
-        "messages": [{"role": "user", "content": f"Read these project notes.\n\n{marker}\n\n"
-            "Write a practical design review for a colleague. In four paragraphs explain how the tests "
-            "were set up, what the results mean, and what the next experiment should measure."}],
-        "chat_template_kwargs": {"enable_thinking": False},
-    })["prompt"]
-    before, separator, after = template.partition(marker)
-    if not separator:
-        raise RuntimeError("Chat template did not preserve the context placeholder")
+    def chat(instruction):
+        template = request(base, "/apply-template", {
+            "messages": [{"role": "user", "content": f"Read these project notes.\n\n{marker}\n\n{instruction}"}],
+            "chat_template_kwargs": {"enable_thinking": False},
+        })["prompt"]
+        before, separator, after = template.partition(marker)
+        if not separator:
+            raise RuntimeError("Chat template did not preserve the context placeholder")
+        return fit(before, chat_context, after)
+
+    if held_out:
+        return {"prose_briefing": chat(
+            "Write a letter to a student who has never programmed a GPU. In four paragraphs, explain "
+            "why changing how a GPU reads data can fail to make the model faster. Use an everyday analogy "
+            "and explain what measurement would change your mind."
+        )}
     return {
         "code_continuation": fit("# Python API wrappers\n", code, "def get_item_500", take_tail=True),
-        "project_chat": fit(before, chat_context, after),
+        "project_chat": chat(
+            "Write a practical design review for a colleague. In four paragraphs explain how the tests "
+            "were set up, what the results mean, and what the next experiment should measure."
+        ),
     }
 
 
@@ -80,12 +91,16 @@ def completion(base, tokens):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--adaptive", action="store_true", help="Also compare the built adaptive runtime")
+    options = parser.parse_args()
     root = Path(os.environ["LLM_OPT_ROOT"])
     project = Path(__file__).resolve().parent.parent
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     exe = root / "build/llama-cuda/bin/llama-server.exe"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    result = project / "results" / f"ngram-8k-{stamp}.json"
+    label = "ngram-adaptive" if options.adaptive else "ngram"
+    result = project / "results" / f"{label}-8k-{stamp}.json"
     dataset = {
         "status": "running", "prompt_tokens": PROMPT_TOKENS, "output_tokens": OUTPUT_TOKENS,
         "context_capacity": CONTEXT_CAPACITY, "kv_cache": "f16",
@@ -94,6 +109,14 @@ def main():
             ["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip(),
         "sessions": [],
     }
+    modes = ["none", "ngram-simple"]
+    if options.adaptive:
+        modes.append("ngram-backoff")
+        candidate = root / "build/llama-adaptive-ngram"
+        dataset["adaptive_build"] = json.loads((candidate / "build.json").read_text(encoding="utf-8"))
+        archived = project / "results/ngram-8k-20261121T220522Z.json"
+        dataset["archived_prompt_source"] = archived.name
+        archived_prompts = json.loads(archived.read_text(encoding="utf-8"))["prompts"]
 
     def save():
         partial = result.with_suffix(".partial")
@@ -101,12 +124,15 @@ def main():
         partial.replace(result)
 
     try:
-        for index, mode in enumerate(("none", "ngram-simple", "ngram-simple", "none")):
-            args = [str(exe), "-m", str(model), "-ngl", "99", "-c", str(CONTEXT_CAPACITY),
+        for index, mode in enumerate(modes + modes[::-1]):
+            adaptive = mode == "ngram-backoff"
+            executable = candidate / "bin/llama-server.exe" if adaptive else exe
+            environment = {**os.environ, "LLM_OPT_NGRAM_BACKOFF": "1" if adaptive else "0"}
+            args = [str(executable), "-m", str(model), "-ngl", "99", "-c", str(CONTEXT_CAPACITY),
                     "-np", "1", "-b", "512", "-ub", "128", "-t", "8", "-fa", "on",
                     "-ctk", "f16", "-ctv", "f16", "--fit", "off", "--metrics", "-lv", "4",
-                    "--spec-type", mode]
-            if mode == "ngram-simple":
+                    "--spec-type", "ngram-simple" if adaptive else mode]
+            if mode != "none":
                 args += NGRAM_ARGS
             log_path = result.with_name(f"{result.stem}-{index + 1}-{mode}.log")
             session = {"mode": mode, "measurements": []}
@@ -119,12 +145,13 @@ def main():
                     "--format=csv,noheader,nounits", "--loop-ms=200",
                 ], stdout=gpu_stream, stderr=subprocess.STDOUT)
                 try:
-                    with local_server(args, log_path) as (base, command):
+                    with local_server(args, log_path, environment=environment) as (base, command):
                         session["command"] = command
                         if "prompts" not in dataset:
-                            dataset["prompts"] = prompts(base, project)
+                            dataset["prompts"] = ({**archived_prompts, **prompts(base, project, held_out=True)}
+                                                  if options.adaptive else prompts(base, project))
                         cases = list(dataset["prompts"].items())
-                        if index >= 2:
+                        if index >= len(modes):
                             cases.reverse()
                         for name, tokens in cases:
                             row = {"case": name, **completion(base, tokens)}

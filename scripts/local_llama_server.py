@@ -17,14 +17,14 @@ def request(base, route, payload=None, *, decode_json=True):
 
 
 @contextmanager
-def local_server(args, log_path):
+def local_server(args, log_path, *, environment=None):
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
     base = f"http://127.0.0.1:{port}"
     command = [*args, "--host", "127.0.0.1", "--port", str(port), "--no-webui"]
     with log_path.open("w", encoding="utf-8") as log:
-        server = subprocess.Popen(command, stdout=log, stderr=log)
+        server = subprocess.Popen(command, stdout=log, stderr=log, env=environment)
         try:
             deadline = time.monotonic() + 120
             while True:

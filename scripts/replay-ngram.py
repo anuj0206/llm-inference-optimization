@@ -79,12 +79,13 @@ def main():
             if row["tokens"] != output:
                 raise SystemExit(f"Greedy outputs differ between runs for {case}.")
         stock = replay(prompt, output, lambda history, sampled: fixed_draft(history, sampled, 6, 8))
+        backoff = replay(prompt, output, consensus_draft)
+        by_mode = {"ngram-simple": stock, "ngram-backoff": backoff}
         for mode, row in runs:
-            if mode == "ngram-simple" and stock[:3] != (row["drafted"], row["accepted"], row["verifications"]):
-                raise SystemExit(f"Fixed 6/8 replay counters do not match the measured counters for {case}.")
+            if mode in by_mode and by_mode[mode][:3] != (row["drafted"], row["accepted"], row["verifications"]):
+                raise SystemExit(f"{mode} replay counters do not match the measured counters for {case}.")
         print(f"\n{case} | policy | drafted | accepted | verification calls | target calls")
         shorter = replay(prompt, output, lambda history, sampled: fixed_draft(history, sampled, 3, 4))
-        backoff = replay(prompt, output, consensus_draft)
         for label, counts in [("fixed 6/8", stock), ("fixed 3/4", shorter), ("consensus backoff", backoff)]:
             print(" | ".join((label, *(str(value) for value in counts))))
 
