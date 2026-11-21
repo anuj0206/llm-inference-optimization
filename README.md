@@ -109,6 +109,17 @@ Qwen3 8B Q4_K_M is the primary optimization target. Keep Qwen3 4B Q4_K_M as the 
 
 `run-model.ps1` now defaults to 8B; pass `-ModelSize 4B` for the development model.
 
+### N-gram speculative decoding
+
+Pass `-NgramSpeculation` to try llama.cpp's prompt and history lookup with the existing model. The experiment matches six prior tokens and can propose up to eight following tokens for the target model to verify. Drafting uses the local token history.
+
+```powershell
+.\scripts\run-model.ps1 -ModelSize 8B -Context 8448 -NgramSpeculation
+.\scripts\benchmark-ngram.ps1
+```
+
+The benchmark compares stock and `ngram-simple` on a repetitive Python continuation and a prose response to the project notes. Both use exactly 8,192 input tokens, 128 generated tokens, greedy sampling, FP16 KV cache and one CUDA-offloaded server slot. Prompt reuse is disabled. The server sessions run stock, speculative, speculative, then stock, and the second half reverses the prompt order. Results record decode throughput, draft and acceptance counts, sampled peak VRAM and the generated token IDs for comparison. Local logs record the server output and GPU samples. See the [first comparison](docs/experiment-log.md#2026-11-21-n-gram-speculative-decoding).
+
 With the laptop plugged in and other GPU applications closed, benchmark each model sequentially:
 
 ```powershell

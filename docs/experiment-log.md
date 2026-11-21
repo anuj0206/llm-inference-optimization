@@ -49,3 +49,14 @@ Added an opt-in, in-process CUPTI build of the isolated stock kernel harness. Th
 ## 2026-11-21 Packed Q4_K header load
 
 Compiled a single 128-bit metadata load per matrix in the fused inner loop. The variant matched stock bitwise across all 36 correctness cases. CUPTI showed 33.3% fewer L1 global-load requests and 11.1% less L1 sector volume, with DRAM reads still about 54 MiB. Prepared-activation latency in the rotating workload was 0.06–0.07% higher across two runs. The [benchmark notes](q4-k-benchmark.md#packed-q4_k-header-load) link to the timings and counter comparison.
+
+## 2026-11-21 N-gram speculative decoding
+
+Enabled llama.cpp's existing `ngram-simple` mode through the opt-in `-NgramSpeculation` launch switch. The test matches six tokens in the history and drafts up to eight. The target model verifies the drafts. We ran two repetitions per mode and workload on AC, with 8,192 input tokens, 128 generated tokens and FP16 KV cache. Each session reported 37/37 layers offloaded. Prompt reuse was disabled.
+
+| Workload | Stock decode | N-gram decode | Accepted drafts per run |
+| --- | ---: | ---: | ---: |
+| Repetitive Python continuation | 28.96 tokens/s | 60.38 tokens/s | 72 / 138 |
+| Prose response to project notes | 28.80 tokens/s | 29.11 tokens/s | 2 / 16 |
+
+Greedy token IDs matched across all repeats for both prompts. The device-wide sampled peak was 5,785 MiB in every session. The Python case continued closely repeated helper functions and reached 2.08× the stock decode rate. The single prose case showed little change. Measure other prompts before generalizing the speedup. [Raw prompts, outputs and measurements](../results/ngram-8k-20261121T220522Z.json)
