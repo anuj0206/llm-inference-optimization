@@ -16,7 +16,8 @@ lines = ["# Isolated Q4_K benchmark result", "", f"Raw result: `{path.name}`. Ru
          "The operation is the stock fused up/gate/SwiGLU path, N=12288, K=4096, one token. Weights come from the verified Qwen3 8B Q4_K_M file. No custom optimization is being claimed.", "",
          "## Numerical validation", "", "| Comparison | Violating values | Worst case relative L2 error |", "| --- | ---: | ---: |"]
 for key in ("up_dot", "gate_dot", "fused_vs_cpu", "fused_vs_unfused", "two_warp_vs_cpu", "two_warp_vs_stock",
-            "two_warp_vs_stock_tight_diagnostic"):
+            "two_warp_vs_stock_tight_diagnostic", "one_warp_vs_cpu", "one_warp_vs_stock",
+            "one_warp_vs_stock_tight_diagnostic"):
     if not all(key in case for case in checks):
         continue
     lines.append(f"| {key} | {sum(c[key]['failures'] for c in checks)} | {max(c[key]['relative_l2_error'] for c in checks):.3g} |")
@@ -32,17 +33,26 @@ if all("activation_quantization" in c for c in checks):
 for row in sorted(data["timings"], key=lambda r: (r["mode"], r["path"], r["implementation"])):
     lines.append(f"| {row['mode']} | {row['path']} | {row['implementation']} | {row['mean_us']:.3f} | {row['median_us']:.3f} | {row['stddev_batch_mean_us']:.3f} |")
 if "fused_sample_order" in data:
-    lines += ["", "Each stock/candidate pair starts at the same layer. The benchmark alternates which variant runs first.", "",
-              "| Weight access | Activation path | Two-warp latency change vs stock | Pairs where two warps won |",
-              "| --- | --- | ---: | ---: |"]
+    lines += ["", "Stock and candidate samples use the same starting layer within a trial. " + data["fused_sample_order"] + ".", "",
+              "| Candidate | Weight access | Activation path | Latency change vs stock | Trials where candidate won |",
+              "| --- | --- | --- | ---: | ---: |"]
     timings = {(r["mode"], r["path"], r["implementation"]): r for r in data["timings"]}
     for (mode, path_name, implementation), stock in sorted(timings.items()):
         if implementation != "stock_fused":
             continue
-        two_warp = timings[mode, path_name, "two_warp_fused"]
-        change = 100 * (two_warp["mean_us"] / stock["mean_us"] - 1)
-        wins = sum(candidate < baseline for candidate, baseline in zip(two_warp["samples_us"], stock["samples_us"], strict=True))
-        lines.append(f"| {mode} | {path_name} | {change:+.2f}% | {wins}/{len(stock['samples_us'])} |")
+        for label in ("one_warp_fused", "two_warp_fused"):
+            candidate = timings.get((mode, path_name, label))
+            if candidate is None:
+                continue
+            change = 100 * (candidate["mean_us"] / stock["mean_us"] - 1)
+            wins = sum(a < b for a, b in zip(candidate["samples_us"], stock["samples_us"], strict=True))
+            lines.append(f"| {label} | {mode} | {path_name} | {change:+.2f}% | {wins}/{len(stock['samples_us'])} |")
+if "launch_resources" in data:
+    lines += ["", "## CUDA launch resources", "", "Occupancy is calculated from launch limits and compiled resource usage. It is a ceiling for resident warps.", "",
+              "| Warps/block | Registers/thread | Local bytes/thread | Shared bytes/block | Resident warps/SM | Occupancy ceiling |",
+              "| ---: | ---: | ---: | ---: | ---: | ---: |"]
+    for row in data["launch_resources"]:
+        lines.append(f"| {row['warps_per_block']} | {row['registers_per_thread']} | {row['local_bytes_per_thread']} | {row['shared_bytes_per_block']} | {row['max_resident_warps_per_sm']} | {row['theoretical_occupancy']:.1%} |")
 lines += ["", "The unfused implementation is a correctness/control comparison. Stock llama.cpp already performs the fusion. The GPU-stream timer includes launch gaps between queued work; it is not a host-wall-clock or model tokens/sec measurement. Quantization-inclusive and prepared-activation cases are separate runs, so their small difference also contains clock/ordering variability.", "",
           "One-pair reuse reads a 54 MiB pair; the streaming case rotates 36 distinct real layer pairs totaling 1944 MiB. Neither is the complete inference workload. See [the harness guide](../docs/q4-k-benchmark.md) for correctness bounds, cache methodology and reproduction.", ""]
 summary = root / "results/q4-microbench-summary.md"

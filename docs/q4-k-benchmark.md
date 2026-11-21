@@ -126,3 +126,5 @@ Both timed runs passed all 36 correctness cases. The rotating-layer comparison g
 | Repeat | Activation quantization + fused operation | 311.53 | 312.37 |
 
 The small gain with prepared activations in the first run reversed on repeat. Including quantization, two warps were slower in both runs. The experiment stays in the isolated harness. The [initial correctness report](../results/q4-microbench-20261121T173006Z.json) preserves the three tighter diagnostic disagreements.
+
+The harness now also builds a one-warp variant. The six possible orders run four times each, for 24 samples per variant. The result records CUDA function resources and theoretical occupancy. See the [RTX 4050 tuning notes](rtx4050-tuning.md) for the three-way measurement. To inspect the one-warp diff, substitute `one_warp_mmvq.cuh` for `two_warp_mmvq.cuh` above.

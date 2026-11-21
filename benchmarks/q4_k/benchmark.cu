@@ -1,6 +1,7 @@
 // Stock CUDA excerpts are generated from the pinned MIT-licensed llama.cpp source.
 #include "stock_mmvq.cuh"
 #include "two_warp_mmvq.cuh"
+#include "one_warp_mmvq.cuh"
 #include "stock_quantize.cuh"
 #include <nlohmann/json.hpp>
 #include <omp.h>
@@ -42,16 +43,33 @@ static void quantize(const float *x, block_q8_1 *q, int k, cudaStream_t stream) 
     quantize_q8_1<<<dim3((k+255)/256,1,1),256,0,stream>>>(x,q,k,k,k,k,k,1,init_fastdiv_values(1));
 }
 
+template<bool Fused, int Warps> static constexpr auto matvec_kernel() {
+    static_assert(Warps == 4 || (Fused && (Warps == 2 || Warps == 1)));
+    if constexpr (Warps == 1) return mul_mat_vec_q_one_warp<GGML_TYPE_Q4_K,1,Fused>;
+    if constexpr (Warps == 2) return mul_mat_vec_q_two_warps<GGML_TYPE_Q4_K,1,Fused>;
+    return mul_mat_vec_q<GGML_TYPE_Q4_K,1,Fused>;
+}
+
 template<bool Fused, int Warps = 4> static void matvec(const block_q4_K *w, const block_q4_K *gate,
         const block_q8_1 *x, float *y, int n, int k, cudaStream_t stream) {
-    static_assert(Warps == 4 || (Fused && Warps == 2));
     ggml_cuda_mm_fusion_args_device fusion{};
     if constexpr (Fused) { fusion.gate = gate; fusion.glu_op = GGML_GLU_OP_SWIGLU; }
-    constexpr auto kernel = Warps == 2 ? mul_mat_vec_q_two_warps<GGML_TYPE_Q4_K,1,Fused>
-                                       : mul_mat_vec_q<GGML_TYPE_Q4_K,1,Fused>;
+    constexpr auto kernel = matvec_kernel<Fused, Warps>();
     kernel<<<dim3(n,1,1),dim3(32,Warps,1),0,stream>>>(
         w,x,nullptr,fusion,y,k,init_fastdiv_values(1),k/256,k/32,n,init_fastdiv_values(1),
         n*(k/256),k/32,n,init_fastdiv_values(1),n*(k/256),k/32,n,0);
+}
+
+template<int Warps> static json launch_resources(int max_threads_per_sm) {
+    constexpr auto kernel = matvec_kernel<true, Warps>();
+    cudaFuncAttributes attributes{};
+    check(cudaFuncGetAttributes(&attributes, kernel));
+    int blocks_per_sm = 0;
+    check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&blocks_per_sm, kernel, Warps * 32, 0));
+    return {{"warps_per_block", Warps}, {"registers_per_thread", attributes.numRegs},
+        {"local_bytes_per_thread", attributes.localSizeBytes}, {"shared_bytes_per_block", attributes.sharedSizeBytes},
+        {"max_resident_blocks_per_sm", blocks_per_sm}, {"max_resident_warps_per_sm", blocks_per_sm * Warps},
+        {"theoretical_occupancy", double(blocks_per_sm * Warps * 32) / max_threads_per_sm}};
 }
 
 static __global__ void combine(const float *up, const float *gate, float *out, int n) {
@@ -138,19 +156,21 @@ static std::vector<float> activation(int k,int scenario) {
 }
 
 static json correctness(Weights &w,int scenario,cudaStream_t stream) {
-    Device<float> dx(w.k),out(w.n),candidate(w.n),up(w.n),gate(w.n),control(w.n);
+    Device<float> dx(w.k),out(w.n),candidate(w.n),single(w.n),up(w.n),gate(w.n),control(w.n);
     Device<block_q8_1> q(w.k/32);
     auto x=activation(w.k,scenario);
     check(cudaMemcpyAsync(dx.p,x.data(),w.k*sizeof(float),cudaMemcpyHostToDevice,stream));
     quantize(dx.p,q.p,w.k,stream);
     matvec<true>(w.gpu_up.p,w.gpu_gate.p,q.p,out.p,w.n,w.k,stream);
     matvec<true,2>(w.gpu_up.p,w.gpu_gate.p,q.p,candidate.p,w.n,w.k,stream);
+    matvec<true,1>(w.gpu_up.p,w.gpu_gate.p,q.p,single.p,w.n,w.k,stream);
     unfused(w,q.p,up.p,gate.p,control.p,stream);
     check(cudaGetLastError());check(cudaStreamSynchronize(stream));
     std::vector<block_q8_1> qhost(w.k/32);
-    std::vector<float> actual(w.n),two_warp(w.n),hu(w.n),hg(w.n),hc(w.n);
+    std::vector<float> actual(w.n),two_warp(w.n),one_warp(w.n),hu(w.n),hg(w.n),hc(w.n);
     check(cudaMemcpy(qhost.data(),q.p,qhost.size()*sizeof(block_q8_1),cudaMemcpyDeviceToHost));
     check(cudaMemcpy(two_warp.data(),candidate.p,w.n*sizeof(float),cudaMemcpyDeviceToHost));
+    check(cudaMemcpy(one_warp.data(),single.p,w.n*sizeof(float),cudaMemcpyDeviceToHost));
     for(auto item:{std::make_pair(actual.data(),out.p),std::make_pair(hu.data(),up.p),std::make_pair(hg.data(),gate.p),std::make_pair(hc.data(),control.p)})
         check(cudaMemcpy(item.first,item.second,w.n*sizeof(float),cudaMemcpyDeviceToHost));
     auto expected=reference(w,qhost);
@@ -178,6 +198,7 @@ static json correctness(Weights &w,int scenario,cudaStream_t stream) {
         if(std::abs(__high2float(qhost[block].ds)-expected_sum)>6e-8+0.001*std::abs(expected_sum))quant_failures++;
     }
     Errors eu,eg,ef,ec,candidate_cpu,candidate_stock,candidate_stock_tight;
+    Errors single_cpu, single_stock, single_stock_tight;
     for(int i=0;i<w.n;i++) {
         double tu=2e-5*expected.l1_up[i]+2e-5;
         double tg=2e-5*expected.l1_gate[i]+2e-5;
@@ -188,16 +209,22 @@ static json correctness(Weights &w,int scenario,cudaStream_t stream) {
         // Both results can differ from the CPU reference by up to tf.
         candidate_stock.add(two_warp[i],actual[i],2*tf);
         candidate_stock_tight.add(two_warp[i],actual[i],5e-5*(1+std::abs(actual[i])));
+        single_cpu.add(one_warp[i],expected.out[i],tf);
+        single_stock.add(one_warp[i],actual[i],2*tf);
+        single_stock_tight.add(one_warp[i],actual[i],5e-5*(1+std::abs(actual[i])));
     }
     Errors negative;negative.add(std::numeric_limits<double>::quiet_NaN(),expected.out[0],1);
     negative.add(expected.out[0]+10,expected.out[0],1);
     bool passed=eu.failures+eg.failures+ef.failures+ec.failures+quant_failures==0 && negative.failures==2
-        && candidate_cpu.failures == 0 && candidate_stock.failures == 0;
+        && candidate_cpu.failures == 0 && candidate_stock.failures == 0
+        && single_cpu.failures == 0 && single_stock.failures == 0;
     std::cout<<"check layer="<<w.layer<<" n="<<w.n<<" k="<<w.k<<" scenario="<<scenario<<" "<<(passed?"PASS":"FAIL")<<std::endl;
     return {{"layer",w.layer},{"n",w.n},{"k",w.k},{"activation_scenario",scenario},{"passed",passed},
         {"up_dot",eu.result()},{"gate_dot",eg.result()},{"fused_vs_cpu",ef.result()},{"fused_vs_unfused",ec.result()},
         {"two_warp_vs_cpu",candidate_cpu.result()},{"two_warp_vs_stock",candidate_stock.result()},
         {"two_warp_vs_stock_tight_diagnostic",candidate_stock_tight.result()},
+        {"one_warp_vs_cpu",single_cpu.result()},{"one_warp_vs_stock",single_stock.result()},
+        {"one_warp_vs_stock_tight_diagnostic",single_stock_tight.result()},
         {"activation_quantization",{{"failures",quant_failures},{"max_abs_reconstruction_error",max_activation_error},
             {"relative_l2_reconstruction_error",std::sqrt(activation_error_sq/std::max(1e-30,activation_ref_sq))}}},
         {"negative_controls_detected",negative.failures}};
@@ -208,52 +235,58 @@ static json timing(std::vector<std::unique_ptr<Weights>> &weights,bool rotate,bo
     Device<float> x(k),out(n),up(n),gate(n);Device<block_q8_1> q(k/32);
     auto hx=activation(k,0);check(cudaMemcpyAsync(x.p,hx.data(),k*sizeof(float),cudaMemcpyHostToDevice,stream));
     quantize(x.p,q.p,k,stream);
-    auto launch_batch = [&](bool use_two_warps, int count, int start_layer) {
+    auto launch_batch = [&](int variant, int count, int start_layer) {
         for (int i = 0; i < count; ++i) {
             auto &w = *weights[rotate ? (start_layer + i) % weights.size() : 0];
             if (include_quant) quantize(x.p,q.p,k,stream);
             if (split) unfused(w,q.p,up.p,gate.p,out.p,stream);
-            else if (use_two_warps) matvec<true,2>(w.gpu_up.p,w.gpu_gate.p,q.p,out.p,n,k,stream);
+            else if (variant == 1) matvec<true,2>(w.gpu_up.p,w.gpu_gate.p,q.p,out.p,n,k,stream);
+            else if (variant == 2) matvec<true,1>(w.gpu_up.p,w.gpu_gate.p,q.p,out.p,n,k,stream);
             else matvec<true>(w.gpu_up.p,w.gpu_gate.p,q.p,out.p,n,k,stream);
         }
     };
     constexpr int warmup_calls = 200;
     constexpr int calls_per_sample = 108;
-    constexpr int sample_count = 20;
-    launch_batch(false, warmup_calls, 0);
-    if (!split) launch_batch(true, warmup_calls, 0);
+    constexpr int sample_count = 24;
+    const int variants = split ? 1 : 3;
+    for (int variant = 0; variant < variants; ++variant) launch_batch(variant, warmup_calls, 0);
     check(cudaStreamSynchronize(stream));
     cudaEvent_t begin,end;check(cudaEventCreate(&begin));check(cudaEventCreate(&end));
-    std::array<std::vector<double>, 2> samples;
+    // Use every possible ordering of the three fused variants equally often.
+    constexpr int orders[6][3] = {{0, 1, 2}, {2, 1, 0}, {1, 2, 0}, {0, 2, 1}, {2, 0, 1}, {1, 0, 2}};
+    std::array<std::vector<double>, 3> samples;
     for (int trial = 0; trial < sample_count; ++trial) {
-        for (int arm = 0; arm < (split ? 1 : 2); ++arm) {
-            const bool use_two_warps = !split && (trial + arm) % 2 == 1;
+        for (int arm = 0; arm < variants; ++arm) {
+            const int variant = split ? 0 : orders[trial % 6][arm];
             check(cudaEventRecord(begin,stream));
-            launch_batch(use_two_warps, calls_per_sample, trial);
+            launch_batch(variant, calls_per_sample, trial);
             check(cudaEventRecord(end,stream));
             check(cudaEventSynchronize(end));
             float ms;
             check(cudaEventElapsedTime(&ms,begin,end));
-            samples[use_two_warps].push_back(ms * 1000.0 / calls_per_sample);
+            samples[variant].push_back(ms * 1000.0 / calls_per_sample);
         }
     }
     check(cudaGetLastError());check(cudaEventDestroy(begin));check(cudaEventDestroy(end));
     json rows = json::array();
-    for (int arm = 0; arm < (split ? 1 : 2); ++arm) {
+    constexpr const char *fused_labels[] = {"stock_fused", "two_warp_fused", "one_warp_fused"};
+    for (int arm = 0; arm < variants; ++arm) {
         const auto &values = samples[arm];
         auto sorted = values;
         std::sort(sorted.begin(), sorted.end());
         const double mean = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
         double variance = 0;
         for (double value : values) variance += (value-mean)*(value-mean);
-        const char *implementation = split ? "unfused_control" : arm == 0 ? "stock_fused" : "two_warp_fused";
+        const char *implementation = split ? "unfused_control" : fused_labels[arm];
         std::cout << "timing " << (rotate ? "36-layer rotation" : "one-pair reuse") << " "
                   << (include_quant ? "quant+operation" : "prepared activation") << " " << implementation
                   << " " << mean << " us" << std::endl;
         rows.push_back({{"mode",rotate?"36_layer_rotation":"one_pair_reuse"},
             {"path",include_quant?"quantize_plus_operation":"prepared_activation"},
-            {"implementation",implementation},{"mean_us",mean},{"median_us",(sorted[9]+sorted[10])/2},
-            {"p95_batch_mean_us",sorted[18]},{"stddev_batch_mean_us",std::sqrt(variance/(sample_count-1))},
+            {"implementation",implementation},{"mean_us",mean},
+            {"median_us",(sorted[sample_count/2-1]+sorted[sample_count/2])/2},
+            {"p95_batch_mean_us",sorted[(95*sample_count+99)/100-1]},
+            {"stddev_batch_mean_us",std::sqrt(variance/(sample_count-1))},
             {"warmup_calls",warmup_calls},{"calls_per_sample",calls_per_sample},{"samples_us",values}});
     }
     return rows;
@@ -268,6 +301,13 @@ int main(int argc,char **argv) {
         omp_set_num_threads(8);
         cudaDeviceProp prop{};check(cudaGetDeviceProperties(&prop,0));
         result["device"]={{"name",prop.name},{"l2_bytes",prop.l2CacheSize},{"compute_major",prop.major},{"compute_minor",prop.minor}};
+        result["device"]["streaming_multiprocessors"] = prop.multiProcessorCount;
+        result["device"]["max_threads_per_sm"] = prop.maxThreadsPerMultiProcessor;
+        result["device"]["max_blocks_per_sm"] = prop.maxBlocksPerMultiProcessor;
+        result["device"]["total_vram_bytes"] = prop.totalGlobalMem;
+        result["device"]["memory_bus_bits"] = prop.memoryBusWidth;
+        result["launch_resources"] = json::array({launch_resources<4>(prop.maxThreadsPerMultiProcessor),
+            launch_resources<2>(prop.maxThreadsPerMultiProcessor), launch_resources<1>(prop.maxThreadsPerMultiProcessor)});
         int runtime_version=0,driver_version=0;check(cudaRuntimeGetVersion(&runtime_version));check(cudaDriverGetVersion(&driver_version));
         result["cuda_runtime_version"]=runtime_version;result["cuda_driver_version"]=driver_version;
         result["tolerances"]={{"dot_absolute_floor",2e-5},{"dot_l1_factor",2e-5},{"output_relative_floor",5e-5},
@@ -308,7 +348,7 @@ int main(int argc,char **argv) {
         for(bool rotate:{false,true})for(bool include_quant:{false,true})for(bool split:{false,true})modes.push_back({rotate,include_quant,split});
         std::mt19937 ordering(42);std::shuffle(modes.begin(),modes.end(),ordering);
         result["timing_order_seed"]=42;result["device_weight_working_set_bytes"]=uint64_t(36)*2*12288*4096/256*144;
-        result["fused_sample_order"] = "Stock first on even trials, two warps first on odd trials";
+        result["fused_sample_order"] = "All six permutations of stock, two warps and one warp, four times each";
         for (const auto &mode : modes) {
             for (auto &row : timing(weights,mode[0],mode[1],mode[2],stream)) {
                 result["timings"].push_back(std::move(row));

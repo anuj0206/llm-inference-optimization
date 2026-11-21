@@ -29,3 +29,7 @@ Validation passed 36/36 cases with 72/72 checker negative detections. A follow-u
 ## 2026-11-21 Two warps per block
 
 The isolated candidate switched the fused operation from 128 to 64 threads per block while keeping one output row per block. Both timed runs passed 36/36 cases against the CPU reference. The prepared-activation latency changed by -0.27% and +0.61% in the layer rotation. With quantization included the candidate was slower in both runs, by 0.95% and 0.27%. See the [exact diff command, tolerances and raw runs](q4-k-benchmark.md#two-warp-experiment).
+
+## 2026-11-21 One warp and RTX 4050 hardware
+
+Both three-way runs passed 36/36 cases. One warp was about 1% slower in the prepared-activation layer rotation and 0.6% slower with activation quantization included. CUDA reports an occupancy ceiling of 24 resident warps per SM for one warp per block and 36 for the stock kernel. The [RTX 4050 tuning notes](rtx4050-tuning.md) record the hardware, disassembly observations, measurements and candidates for the next experiment.
