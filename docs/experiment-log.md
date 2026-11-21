@@ -83,3 +83,19 @@ The backoff prototype keeps the existing six-token lookup. When it yields no dra
 These are replay counts from two traces. They exclude GPU verification latency and CPU lookup time. Fixed 3/4 finds more accepted prose drafts and makes three times as many verification calls as consensus backoff. Compare actual time before selecting a policy.
 
 The runtime version can index suffix occurrences per sequence, update the index with confirmed tokens, and propose drafts through the existing llama.cpp interface. Keep the target verifier and KV rollback. Track acceptance separately by suffix length and draft position. For each candidate draft length, estimate the expected number of tokens emitted by the pass and divide by the measured time for lookup, verification and any rollback. Include a zero-length draft as the ordinary decode option. Time both stock and the adaptive policy with the same model and cache on a held-out mix of prose, summarization and code at 8K. Check greedy token IDs, decode tokens/sec, VRAM and the number of accepted drafts. If within-request repeats are scarce, past responses or a domain corpus could supply additional draft candidates. [SuffixDecoding](https://arxiv.org/abs/2411.04975) · [REST](https://aclanthology.org/2024.naacl-long.88/)
+
+## 2026-11-21 Adaptive n-gram runtime
+
+Added an opt-in C++ implementation of consensus backoff inside the pinned runtime's `ngram-simple` lookup. It scans the confirmed request history for matching suffixes and keeps up to 16 recent matches per lookup length. It uses the greedy voting thresholds from the replay and submits drafts to the existing target verifier. The variant adapts lookup and draft lengths using agreement in the history.
+
+`scripts/build-adaptive-ngram.ps1` compiles the modified n-gram host object and relinks `llama-common.dll` into a separate build directory using the stock objects and import libraries. The launchers, server implementation and CUDA library in the candidate directory are byte-identical copies of the stock files. The benchmark records the common-library hashes in its output.
+
+The live comparison uses the archived Python and prose token sequences plus a new prose briefing. Each request has 8,192 prompt tokens and generates 128 tokens with greedy sampling and FP16 KV cache. Each mode runs twice in opposite order on AC, with full GPU offload and prompt reuse disabled.
+
+| Workload | Stock decode | Fixed n-gram | Adaptive n-gram | Adaptive drafts accepted per run |
+| --- | ---: | ---: | ---: | ---: |
+| Repetitive Python continuation | 28.97 tok/s | 60.86 tok/s | 85.18 tok/s | 90 / 164 |
+| Prose project review | 29.07 tok/s | 29.18 tok/s | 30.52 tok/s | 8 / 15 |
+| Held-out prose briefing | 28.92 tok/s | 28.62 tok/s | 28.73 tok/s | 0 / 8 |
+
+All greedy token IDs matched stock across the 18 measured requests. The replay reproduced the live draft, acceptance and verification counts for both speculative modes on all three prompts. Every session peaked at 5,785 MiB in the 200 ms GPU samples. The adaptive variant improved the project-review prompt by 5.0% over stock and left the briefing within 1% of stock. The brief produced no accepted drafts. The two prose prompts support a workload-dependent speedup. [Raw results](../results/ngram-adaptive-8k-20261121T223052Z.json)

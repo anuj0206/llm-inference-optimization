@@ -120,6 +120,16 @@ Pass `-NgramSpeculation` to try llama.cpp's prompt and history lookup with the e
 
 The benchmark compares stock and `ngram-simple` on a repetitive Python continuation and a prose response to the project notes. Both use exactly 8,192 input tokens, 128 generated tokens, greedy sampling, FP16 KV cache and one CUDA-offloaded server slot. Prompt reuse is disabled. The server sessions run stock, speculative, speculative, then stock, and the second half reverses the prompt order. Results record decode throughput, draft and acceptance counts, sampled peak VRAM and the generated token IDs for comparison. Local logs record the server output and GPU samples. See the [first comparison](docs/experiment-log.md#2026-11-21-n-gram-speculative-decoding).
 
+To try the consensus-backoff variant, first build its separate runtime against the pinned stock CUDA build:
+
+```powershell
+.\scripts\build-adaptive-ngram.ps1
+.\scripts\run-model.ps1 -ModelSize 8B -Context 8448 -AdaptiveNgram
+.\scripts\benchmark-ngram.ps1 -Adaptive
+```
+
+The adaptive mode keeps the fixed lookup for long matches and uses historical agreement to extend shorter drafts. Its build recompiles the n-gram host object and relinks the common DLL alongside copies of the existing CUDA runtime and executables. The comparison adds the adaptive runtime and a held-out prose prompt. See the [runtime notes](docs/experiment-log.md#2026-11-21-adaptive-n-gram-runtime).
+
 With the laptop plugged in and other GPU applications closed, benchmark each model sequentially:
 
 ```powershell
