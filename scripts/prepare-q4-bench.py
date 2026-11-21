@@ -39,6 +39,12 @@ for label, suffix, warps in (("one_warp", "one_warp", 1), ("two_warp", "two_warp
             raise SystemExit(f"Expected one kernel substitution for {old!r}")
         kernel = kernel.replace(old, new)
     (build / f"{label}_mmvq.cuh").write_text(kernel)
+row_expression = "calc_rows_per_block(type, ncols_dst, table_id, small_k, nwarps)"
+if stock_kernel.count(row_expression) != 1:
+    raise SystemExit("Unexpected stock rows-per-block expression")
+two_row_kernel = stock_kernel.replace(row_expression, "2").replace(
+    "static __global__ void mul_mat_vec_q(", "static __global__ void mul_mat_vec_q_two_rows(")
+(build / "two_row_mmvq.cuh").write_text(two_row_kernel)
 (build / "stock_quantize.cuh").write_text(quant_prefix)
 (build / "llama.cpp-LICENSE").write_bytes((source / "LICENSE").read_bytes())
 spec = importlib.util.spec_from_file_location("inventory", Path(__file__).with_name("inspect-q4-k.py"))
@@ -68,6 +74,7 @@ fixture = {"model_path": str(model), "model_manifest": manifest, "source_commit"
            "generated_mmvq_sha256": hashlib.sha256((build / "stock_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_two_warp_sha256": hashlib.sha256((build / "two_warp_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_one_warp_sha256": hashlib.sha256((build / "one_warp_mmvq.cuh").read_bytes()).hexdigest(),
+           "generated_two_row_sha256": hashlib.sha256((build / "two_row_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_quantize_sha256": hashlib.sha256((build / "stock_quantize.cuh").read_bytes()).hexdigest(),
            "n": 12288, "k": 4096, "pairs": pairs}
 (build / "fixture.json").write_text(json.dumps(fixture, indent=2) + "\n")

@@ -17,7 +17,8 @@ lines = ["# Isolated Q4_K benchmark result", "", f"Raw result: `{path.name}`. Ru
          "## Numerical validation", "", "| Comparison | Violating values | Worst case relative L2 error |", "| --- | ---: | ---: |"]
 for key in ("up_dot", "gate_dot", "fused_vs_cpu", "fused_vs_unfused", "two_warp_vs_cpu", "two_warp_vs_stock",
             "two_warp_vs_stock_tight_diagnostic", "one_warp_vs_cpu", "one_warp_vs_stock",
-            "one_warp_vs_stock_tight_diagnostic"):
+            "one_warp_vs_stock_tight_diagnostic", "two_row_vs_cpu", "two_row_vs_stock",
+            "two_row_vs_stock_tight_diagnostic"):
     if not all(key in case for case in checks):
         continue
     lines.append(f"| {key} | {sum(c[key]['failures'] for c in checks)} | {max(c[key]['relative_l2_error'] for c in checks):.3g} |")
@@ -40,7 +41,7 @@ if "fused_sample_order" in data:
     for (mode, path_name, implementation), stock in sorted(timings.items()):
         if implementation != "stock_fused":
             continue
-        for label in ("one_warp_fused", "two_warp_fused"):
+        for label in ("one_warp_fused", "two_warp_fused", "two_row_fused"):
             candidate = timings.get((mode, path_name, label))
             if candidate is None:
                 continue
@@ -49,10 +50,14 @@ if "fused_sample_order" in data:
             lines.append(f"| {label} | {mode} | {path_name} | {change:+.2f}% | {wins}/{len(stock['samples_us'])} |")
 if "launch_resources" in data:
     lines += ["", "## CUDA launch resources", "", "Occupancy is calculated from launch limits and compiled resource usage. It is a ceiling for resident warps.", "",
-              "| Warps/block | Registers/thread | Local bytes/thread | Shared bytes/block | Resident warps/SM | Occupancy ceiling |",
-              "| ---: | ---: | ---: | ---: | ---: | ---: |"]
+              "| Rows/block | Warps/block | Registers/thread | Local bytes/thread | Shared bytes/block | Resident blocks/SM | Resident warps/SM | Occupancy ceiling |",
+              "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for row in data["launch_resources"]:
-        lines.append(f"| {row['warps_per_block']} | {row['registers_per_thread']} | {row['local_bytes_per_thread']} | {row['shared_bytes_per_block']} | {row['max_resident_warps_per_sm']} | {row['theoretical_occupancy']:.1%} |")
+        lines.append(
+            f"| {row.get('rows_per_block', 1)} | {row['warps_per_block']} | {row['registers_per_thread']} | "
+            f"{row['local_bytes_per_thread']} | {row['shared_bytes_per_block']} | "
+            f"{row['max_resident_blocks_per_sm']} | {row['max_resident_warps_per_sm']} | {row['theoretical_occupancy']:.1%} |"
+        )
 lines += ["", "The unfused implementation is a correctness/control comparison. Stock llama.cpp already performs the fusion. The GPU-stream timer includes launch gaps between queued work; it is not a host-wall-clock or model tokens/sec measurement. Quantization-inclusive and prepared-activation cases are separate runs, so their small difference also contains clock/ordering variability.", "",
           "One-pair reuse reads a 54 MiB pair; the streaming case rotates 36 distinct real layer pairs totaling 1944 MiB. Neither is the complete inference workload. See [the harness guide](../docs/q4-k-benchmark.md) for correctness bounds, cache methodology and reproduction.", ""]
 summary = root / "results/q4-microbench-summary.md"

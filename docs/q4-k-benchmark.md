@@ -80,14 +80,14 @@ Each case also checks that the error checker rejects a NaN and an intentionally 
 
 ## Timing methodology
 
-Only after all cases pass, eight configurations are run: fused/unfused, prepared-Q8_1/quantization-inclusive, and one-pair reuse/36-pair rotation.
+After all cases pass, the harness measures each fused variant and the unfused control with both activation paths and both weight access patterns.
 
 - **Prepared activation:** Q8_1 conversion is outside the timer. Measures the fused kernel, or the two dot kernels plus separate SiLU/multiply control.
 - **Quantization-inclusive:** each operation converts the same FP32 input before executing the selected operation. Weights remain resident; host/device upload is excluded.
 - **One-pair reuse:** repeatedly executes layer 0's 54 MiB pair.
 - **36-layer rotation:** round-robins 36 distinct actual pairs, a 1944 MiB weight working set. Both modes use the same fixed activation vector, unlike full inference.
 
-Each configuration has 200 warmup operations, then 20 CUDA-event samples of 100 operations each on one stream. Results include all sample batch means, mean/median, standard deviation and p95 of those batch means. The p95 is not a per-call tail-latency percentile. Timing configuration order is shuffled with seed 42 and stored in output order.
+Each configuration has 200 warmup operations. The current harness takes 24 CUDA-event samples of 108 operations each on one stream. The initial stock harness took 20 samples of 100 operations each. Results include the sample batch means, their mean and median, standard deviation and p95. The p95 describes the distribution of batch means. Timing configuration order is shuffled with seed 42 and stored in output order.
 
 CUDA events measure elapsed device-stream time including gaps between submitted launches. They do not measure model loading, serving, tokenization, sampling, per-token inference, or host-wall-clock latency. The stock runtime's CUDA-graph replay is not reproduced by these direct standalone launches. Profile-derived per-kernel latency and event-batched timing have different overheads.
 
@@ -97,9 +97,9 @@ The run wrapper records AC power, UTC timestamps, runner/executable hashes and G
 
 The first successful run is `q4-microbench-20261120T165156Z.json` with matching `.run.json`. All 36 cases passed, all 72 deliberately corrupted outputs were detected, and fused/unfused GPU outputs were identical on the tested cases. Worst per-case fused-versus-CPU relative L2 error was approximately `2.54e-7`. Large-range cases can have a larger absolute error because outputs are large; inspect normalized errors and bounds together.
 
-The subsequent run `q4-microbench-20261120T165630Z.json` added the independent activation-quantizer checks and also passed all 36 cases with zero quantization-check violations. Both successful runs are retained. The generated summary currently refers to this newer run.
+The subsequent run `q4-microbench-20261120T165630Z.json` added the independent activation-quantizer checks and also passed all 36 cases with zero quantization-check violations. Both successful runs are retained.
 
-Stock fused prepared-activation timing was about 309 us for both access modes. This agrees closely with the earlier approximately 308 us model-profile observation, providing a practical baseline for the selected operation. The unfused control was about 315 us. This does not represent a new optimization: the production runtime already uses fusion. See [the generated summary](../results/q4-microbench-summary.md) for all eight timing rows and variability.
+Stock fused prepared-activation timing was about 309 us for both access modes, close to the earlier 308 us model-profile observation. The unfused control was about 315 us. The production runtime already uses fusion. See the [baseline run](../results/q4-microbench-20261120T165630Z.json) for all eight timing rows and variability.
 
 ## Two-warp experiment
 
@@ -128,3 +128,20 @@ Both timed runs passed all 36 correctness cases. The rotating-layer comparison g
 The small gain with prepared activations in the first run reversed on repeat. Including quantization, two warps were slower in both runs. The experiment stays in the isolated harness. The [initial correctness report](../results/q4-microbench-20261121T173006Z.json) preserves the three tighter diagnostic disagreements.
 
 The harness now also builds a one-warp variant. The six possible orders run four times each, for 24 samples per variant. The result records CUDA function resources and theoretical occupancy. See the [RTX 4050 tuning notes](rtx4050-tuning.md) for the three-way measurement. To inspect the one-warp diff, substitute `one_warp_mmvq.cuh` for `two_warp_mmvq.cuh` above.
+
+## Two rows per block
+
+This variant uses four warps per block, matching stock. The generated device code sets `rows_per_cuda_block = 2`, and the host wrapper launches half as many blocks. At the model's width of 12,288 output rows that yields 6,144 blocks. Each block computes both gate and up dot products for each of two rows and can reuse activation loads. The host wrapper requires an even row count because the kernel reads both rows as a pair.
+
+The benchmark checks the candidate against the CPU and stock outputs on all 36 cases before timing. The four fused variants run in every possible order once, for 24 matched samples of 108 calls. For the exact device-code diff, substitute `two_row_mmvq.cuh` in the command above.
+
+Both runs on AC passed 36/36 cases. The two-row candidate had zero measured difference from stock on the checked outputs. Its worst per-case relative L2 error against the CPU was `2.54e-7`.
+
+| 36-layer rotation | Stock (µs) | Two rows (µs) | Latency change |
+| --- | ---: | ---: | ---: |
+| [First run](../results/q4-microbench-20261121T182537Z.json), prepared activation | 308.665 | 309.341 | +0.22% |
+| [Repeat](../results/q4-microbench-20261121T182608Z.json), prepared activation | 308.734 | 309.439 | +0.23% |
+| First run, activation quantization included | 311.866 | 312.335 | +0.15% |
+| Repeat, activation quantization included | 311.347 | 311.841 | +0.16% |
+
+The extra accumulators raised compiled register use from 56 to 64 per thread and shared memory from 768 to 1,536 bytes per block. CUDA calculated a residency ceiling of eight blocks per SM (32 warps, 66.7% occupancy), down from nine blocks (36 warps, 75%) for stock. This is a launch-resource bound. With slightly higher latency in both runs, the candidate stays in the isolated harness and inference uses the stock kernel.

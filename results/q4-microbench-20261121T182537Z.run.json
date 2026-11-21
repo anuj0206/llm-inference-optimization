@@ -1,0 +1,11 @@
+{
+  "battery_status": 2,
+  "started_at_utc": "2026-11-21T18:25:39.2060133Z",
+  "executable_sha256": "c9da89607faf999a0d6478119d6dd93b95f70a3b6c1a68600ad7bc52a8012963",
+  "power_state": "AC",
+  "runner_sha256": "b8beed3f84a0032c376d33b770d55f2a848de267cfe2ddbff696409ba97fb432",
+  "exit_code": 0,
+  "finished_at_utc": "2026-11-21T18:26:03.0921069Z",
+  "gpu_after": "62, 2430 MHz, 8001 MHz, 61.53 W, 0 MiB",
+  "gpu_before": "49, 2055 MHz, 7001 MHz, 10.72 W, 0 MiB"
+}
