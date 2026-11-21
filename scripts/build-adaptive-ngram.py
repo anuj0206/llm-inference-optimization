@@ -1,5 +1,6 @@
 """Build the alternate host DLL using the pinned CUDA build's unchanged objects."""
 
+import argparse
 import hashlib
 import json
 import os
@@ -23,11 +24,14 @@ def sha256(path):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--budget", action="store_true", help="Build the acceptance-budget runtime separately")
+    args = parser.parse_args()
     project = Path(__file__).resolve().parent.parent
     root = Path(os.environ["LLM_OPT_ROOT"])
     source = root / "llama.cpp"
     stock = root / "build/llama-cuda"
-    target = root / "build/llama-adaptive-ngram"
+    target = root / ("build/llama-budget-ngram" if args.budget else "build/llama-adaptive-ngram")
     binary = target / "bin"
     revision = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     dirty = subprocess.check_output(["git", "-C", str(source), "status", "--porcelain"], text=True)
@@ -38,7 +42,6 @@ def main():
         "ninja", "-t", "compdb", "-x", "CXX_COMPILER__llama-common_unscanned_Release",
         "CXX_SHARED_LIBRARY_LINKER__llama-common_Release",
     ], cwd=stock, text=True))
-    compiler = next(entry for entry in database if entry["output"].endswith("/ngram-map.cpp.obj"))
     linker = next(entry for entry in database if entry["output"] == "bin/llama-common.dll")
     binary.mkdir(parents=True, exist_ok=True)
     manifest = target / "build.json"
@@ -51,7 +54,7 @@ def main():
     source_text = replace_once(source_text, '#include "ngram-map.h"',
                                '#include "ngram-map.h"\n#include "consensus-backoff.inc"\n#include "ranked-draft.inc"')
     source_text = replace_once(source_text, "    // Simple implementation of self-speculative decoding",
-                               """    static const ngram_experiment experiment;
+                               """    const auto & experiment = ngram_experiment_options();
     if (experiment.probe_length) {
         return llama_tokens(experiment.probe_length, sampled);
     }
@@ -68,25 +71,80 @@ def main():
         before = f"if ({condition}) {{\n        return draft_tokens;"
         after = f"if ({condition}) {{\n        return ngram_consensus_backoff(config, tokens, sampled);"
         source_text = replace_once(source_text, before, after)
-    candidate_source = target / "ngram-map.cpp"
-    candidate_source.write_text(source_text, encoding="utf-8")
+    def compile_object(name, text):
+        candidate_source = target / name
+        candidate_source.write_text(text, encoding="utf-8")
+        compiler = next(entry for entry in database if entry["output"].endswith(f"/{name}.obj"))
+        stock_object = str(Path(compiler["output"]))
+        candidate_object = target / f"{name}.obj"
+        command, separator, _ = compiler["command"].rpartition(" -c ")
+        if not separator:
+            raise RuntimeError("Compiler command is missing the source argument.")
+        command = replace_once(command, f"/Fo{stock_object}", f'/Fo"{candidate_object}"')
+        command = replace_once(command, "/Fdcommon\\CMakeFiles\\llama-common.dir\\",
+                               f'/Fd"{target / f"{name}.pdb"}"')
+        command = command.replace(" /showIncludes ", " ")
+        subprocess.run(f'{command} -c "{candidate_source}"', cwd=stock, check=True)
+        return stock_object, str(candidate_object)
 
-    stock_object = str(Path(compiler["output"]))
-    candidate_object = target / "ngram-map.cpp.obj"
-    command, separator, _ = compiler["command"].rpartition(" -c ")
-    if not separator:
-        raise RuntimeError("Compiler command is missing the source argument.")
-    command = replace_once(command, f"/Fo{stock_object}", f'/Fo"{candidate_object}"')
-    command = replace_once(command, "/Fdcommon\\CMakeFiles\\llama-common.dir\\", f'/Fd"{target / "ngram-compile.pdb"}"')
-    command = command.replace(" /showIncludes ", " ")
-    subprocess.run(f'{command} -c "{candidate_source}"', cwd=stock, check=True)
+    objects = [compile_object("ngram-map.cpp", source_text)]
+    budget = policy.with_name("acceptance-budget.inc")
+    if args.budget:
+        shutil.copy2(budget, target / budget.name)
+        speculative = (source / "common/speculative.cpp").read_text(encoding="utf-8")
+        before, header, body = speculative.partition("struct common_speculative_impl_ngram_simple")
+        simple, next_header, after = body.partition("struct common_speculative_impl_ngram_map_k")
+        if not header or not next_header:
+            raise RuntimeError("Pinned ngram-simple implementation not found.")
+        simple = replace_once(simple, "    common_ngram_simple_config config;",
+                              """    common_ngram_simple_config config;
+    const std::array<double, 9> * costs = common_ngram_budget_costs();
+    std::vector<ngram_acceptance_budget> budgets;""")
+        simple = replace_once(simple, "        , config(config)",
+                              "        , config(config)\n        , budgets(costs ? n_seq : 0)")
+        simple = replace_once(simple, """    void begin(llama_seq_id /*seq_id*/, const llama_tokens & /*prompt*/) override {
+        // noop
+    }""", """    void begin(llama_seq_id seq_id, const llama_tokens & /*prompt*/) override {
+        if (costs) {
+            budgets[seq_id] = {};
+            SPC_TRC("ngram-budget begin seq=%d cap=8\\n", seq_id);
+        }
+    }""")
+        simple = replace_once(simple, "            *dp.result = common_ngram_simple_draft(config, *dp.prompt, dp.id_last);",
+                              """            if (!costs) {
+                *dp.result = common_ngram_simple_draft(config, *dp.prompt, dp.id_last);
+                continue;
+            }
+            auto & budget = budgets[seq_id];
+            *dp.result = common_ngram_budget_draft(*dp.prompt, dp.id_last, budget.next_cap());
+            if (dp.n_max > 0 && dp.result->size() > (std::size_t) dp.n_max) {
+                dp.result->resize(dp.n_max);
+            }
+            budget.pending = dp.result->size();""")
+        simple = replace_once(simple, """    void accept(llama_seq_id /*seq_id*/, uint16_t /*n_accepted*/, bool /*is_other*/) override {
+        // noop
+    }""", """    void accept(llama_seq_id seq_id, uint16_t n_accepted, bool is_other) override {
+        if (!costs || is_other) {
+            return;
+        }
+        auto & budget = budgets[seq_id];
+        const auto previous_cap = budget.cap;
+        const auto offered = budget.pending;
+        budget.observe(n_accepted, *costs);
+        if (previous_cap != budget.cap || (previous_cap == 0 && offered > 0)) {
+            SPC_TRC("ngram-budget decision seq=%d from=%zu to=%zu offered=%zu accepted=%u wait=%zu\\n",
+                    seq_id, previous_cap, budget.cap, offered, (unsigned) n_accepted, budget.until_probe);
+        }
+    }""")
+        source_text = before + '#include "acceptance-budget.inc"\n' + header + simple + next_header + after
+        objects.append(compile_object("speculative.cpp", source_text))
 
     match = re.search(r' -- "([^"]+\\link\.exe)" (.+) && cd \."', linker["command"])
     if not match:
         raise RuntimeError("Could not locate the linker invocation in the stock build.")
     link_exe, link_args = match.groups()
     for original, replacement in (
-        (stock_object, str(candidate_object)),
+        *objects,
         ("bin\\llama-common.dll", str(binary / "llama-common.dll")),
         ("common\\llama-common.lib", str(target / "llama-common.lib")),
         ("bin\\llama-common.pdb", str(target / "llama-common.pdb")),
@@ -106,6 +164,7 @@ def main():
         "source_commit": revision,
         "policy_sha256": sha256(policy),
         "ranked_policy_sha256": sha256(ranked),
+        **({"budget_policy_sha256": sha256(budget)} if args.budget else {}),
         "stock_common_sha256": sha256(stock_bin / "llama-common.dll"),
         "adaptive_common_sha256": sha256(binary / "llama-common.dll"),
     }, indent=2) + "\n", encoding="utf-8")

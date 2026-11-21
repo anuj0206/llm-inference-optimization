@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import struct
 
 from benchmark_ngram import (
@@ -61,21 +62,43 @@ def build_static_cache(base, path):
     }
 
 
+def attach_budget_decisions(session, log):
+    text = log.read_text(encoding="utf-8", errors="replace")
+    requests = []
+    for event, fields in re.findall(r"ngram-budget (begin|decision) seq=0 ([^\r\n]+)", text):
+        values = {key: int(value) for key, value in re.findall(r"(\w+)=(\d+)", fields)}
+        if event == "begin":
+            if values != {"cap": 8}:
+                raise RuntimeError(f"Unexpected initial draft budget: {values}")
+            requests.append([])
+        else:
+            requests[-1].append(values)
+    if len(requests) != len(session["measurements"]):
+        raise RuntimeError(f"Expected one draft budget reset per request: {log}")
+    for row, decisions in zip(session["measurements"], requests, strict=True):
+        row["budget_decisions"] = decisions
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("calibration", type=Path)
+    parser.add_argument("--acceptance-budget", type=Path, metavar="FIXTURE",
+                        help="Compare stock, ranked and budget on archived prose prompts")
     options = parser.parse_args()
+    budget_trial = options.acceptance_budget is not None
     root = Path(os.environ["LLM_OPT_ROOT"])
     project = Path(__file__).resolve().parent.parent
     stock = root / "build/llama-cuda/bin/llama-server.exe"
-    candidate = root / "build/llama-adaptive-ngram"
+    candidate = root / ("build/llama-budget-ngram" if budget_trial else "build/llama-adaptive-ngram")
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     build = json.loads((candidate / "build.json").read_text(encoding="utf-8"))
     calibration = json.loads(options.calibration.read_text(encoding="utf-8"))
-    if calibration["status"] != "passed" or calibration["build"] != build:
+    cost_keys = ("source_commit", "stock_common_sha256") if budget_trial else tuple(build)
+    if calibration["status"] != "passed" or any(calibration["build"].get(key) != build[key] for key in cost_keys):
         raise RuntimeError("Use completed calibration from the current adaptive build.")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    result = project / "results" / f"ngram-prose-8k-{stamp}.json"
+    label = "ngram-budget" if budget_trial else "ngram-prose"
+    result = project / "results" / f"{label}-8k-{stamp}.json"
     cache = candidate / f"prose-cache-{stamp}.bin"
     dataset = {
         "status": "running", "prompt_tokens": PROMPT_TOKENS, "output_tokens": OUTPUT_TOKENS,
@@ -85,6 +108,15 @@ def main():
         "sessions": [],
     }
     modes = ["none", "backoff", "ranked", "rolling", "cache-empty", "cache-seeded"]
+    if budget_trial:
+        fixture = json.loads(options.acceptance_budget.read_text(encoding="utf-8"))
+        if fixture["status"] not in ("passed", "token_mismatch") or not fixture["prompts"]:
+            raise RuntimeError("Use an archived completed prose benchmark.")
+        if any(fixture[key] != dataset[key] for key in ("prompt_tokens", "output_tokens", "context_capacity", "kv_cache")):
+            raise RuntimeError("The fixture uses different context, output length, or KV cache settings.")
+        dataset["fixture"] = options.acceptance_budget.name
+        dataset["prompts"] = fixture["prompts"]
+        modes = ["none", "ranked", "budget"]
 
     def save():
         partial = result.with_suffix(".partial")
@@ -97,7 +129,7 @@ def main():
             environment = dict(os.environ)
             for key in ("LLM_OPT_NGRAM_POLICY", "LLM_OPT_NGRAM_PROBE", "LLM_OPT_NGRAM_BACKOFF"):
                 environment.pop(key, None)
-            if mode in ("ranked", "rolling"):
+            if mode in ("ranked", "rolling", "budget"):
                 environment["LLM_OPT_NGRAM_POLICY"] = mode
                 environment["LLM_OPT_NGRAM_STEP_US"] = " ".join(map(str, dataset["step_us"]))
             if mode == "backoff":
@@ -131,9 +163,11 @@ def main():
                         print(f"  {case}: {row['timings']['predicted_per_second']:.2f} tokens/s, "
                               f"accepted {row['accepted']}/{row['drafted']}", flush=True)
                         save()
-                    if "cache_corpus" not in dataset:
+                    if not budget_trial and "cache_corpus" not in dataset:
                         print("Building the static cache from separate Qwen3 responses.", flush=True)
                         dataset["cache_corpus"] = build_static_cache(base, cache)
+                if mode == "budget":
+                    attach_budget_decisions(session, log)
                 save()
 
         comparisons = token_comparisons(dataset["prompts"], dataset["sessions"])

@@ -17,6 +17,10 @@ def first_difference(reference, candidate):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("benchmark", type=Path)
+    parser.add_argument("--same-prefix", action="store_true",
+                        help="Prefill the shared prefix and compare the first scored generation step")
+    parser.add_argument("--disable-cuda-fusion", action="store_true",
+                        help="Compare with the CUDA backend's graph fusions disabled")
     args = parser.parse_args()
     data = json.loads(args.benchmark.read_text(encoding="utf-8"))
     if data["status"] not in ("passed", "token_mismatch"):
@@ -30,19 +34,36 @@ def main():
     stock_row, ranked_row = mismatch
     case = stock_row["case"]
     tokens = data["prompts"][case]
+    output_length = OUTPUT_TOKENS
+    first_scored_token = None
+    variants = (("stock", 0), ("ranked", 0), ("reject-one", 1), ("reject-eight", 8))
+    if args.same_prefix:
+        first_scored_token = first_difference(stock_row["tokens"], ranked_row["tokens"])
+        if not first_scored_token:
+            raise SystemExit("The first output token comes from prefill and cannot depend on draft shape.")
+        tokens = tokens + stock_row["tokens"][:first_scored_token - 1]
+        output_length = 10
+        variants = (("stock", 0), ("reject-one", 1), ("reject-eight", 8))
     root = Path(os.environ["LLM_OPT_ROOT"])
     candidate = root / "build/llama-adaptive-ngram"
-    if json.loads((candidate / "build.json").read_text(encoding="utf-8")) != data["build"]:
+    build = json.loads((candidate / "build.json").read_text(encoding="utf-8"))
+    build_keys = ("source_commit", "stock_common_sha256") if args.same_prefix else tuple(data["build"])
+    if any(build.get(key) != data["build"][key] for key in build_keys):
         raise RuntimeError("Use the same adaptive build as the benchmark.")
     executable = candidate / "bin/llama-server.exe"
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     result = args.benchmark.with_name(f"ngram-parity-8k-{stamp}.json")
-    findings = {"benchmark": args.benchmark.name, "case": case, "sessions": []}
-    for mode, probe in (("stock", 0), ("ranked", 0), ("reject-one", 1), ("reject-eight", 8)):
+    findings = {
+        "benchmark": args.benchmark.name, "case": case, "prompt_tokens": len(tokens),
+        "first_scored_token_zero_based": first_scored_token,
+        "cuda_fusion_disabled": args.disable_cuda_fusion, "build": build, "sessions": [],
+    }
+    for mode, probe in variants:
         environment = dict(os.environ)
         for key in ("LLM_OPT_NGRAM_POLICY", "LLM_OPT_NGRAM_PROBE", "LLM_OPT_NGRAM_BACKOFF"):
             environment.pop(key, None)
+        environment["GGML_CUDA_DISABLE_FUSION"] = "1" if args.disable_cuda_fusion else "0"
         command = server_args(executable, model, "none" if mode == "stock" else "ngram-simple")
         if mode != "stock":
             command += NGRAM_ARGS
@@ -54,7 +75,7 @@ def main():
             command += ["--spec-synth-rates", ",".join(["0"] * 8)]
         with local_server(command, result.with_name(f"{result.stem}-{mode}.log"), environment=environment) as (base, actual):
             response = request(base, "/completion", {
-                "prompt": tokens, "n_predict": OUTPUT_TOKENS, "temperature": 0, "seed": 42,
+                "prompt": tokens, "n_predict": output_length, "temperature": 0, "seed": 42,
                 "cache_prompt": False, "ignore_eos": True, "stream": False, "return_tokens": True,
                 "n_probs": 4, "post_sampling_probs": False,
             })
@@ -63,19 +84,26 @@ def main():
             raise RuntimeError(f"Synthetic rejection failed for {mode}: {counts}")
         probs = response["completion_probabilities"]
         observed = response["tokens"]
-        if len(observed) != OUTPUT_TOKENS or len(probs) != OUTPUT_TOKENS:
+        if len(observed) != output_length or len(probs) != output_length:
             raise RuntimeError(f"Unexpected completion length for {mode}.")
         if mode == "stock":
             stock_tokens, stock_probs = observed, probs
         index = first_difference(stock_tokens, observed)
         expected = {"stock": stock_row["tokens"], "ranked": ranked_row["tokens"]}.get(mode)
+        scored = index
+        if args.same_prefix:
+            anchor = stock_row["tokens"][first_scored_token - 1]
+            if observed[0] != anchor:
+                raise RuntimeError(f"Shared-prefix prefill returned a different anchor for {mode}.")
+            expected = None
+            scored = 1
         findings["sessions"].append({
             "mode": mode, "command": actual, "first_difference_zero_based": index,
             "matches_benchmark": observed == expected if expected is not None else None,
-            "stock_probabilities": stock_probs[index] if index is not None else None,
-            "candidate_probabilities": probs[index] if index is not None else None,
-            "stock_token": stock_tokens[index] if index is not None else None,
-            "candidate_token": observed[index] if index is not None else None,
+            "stock_probabilities": stock_probs[scored] if scored is not None else None,
+            "candidate_probabilities": probs[scored] if scored is not None else None,
+            "stock_token": stock_tokens[scored] if scored is not None else None,
+            "candidate_token": observed[scored] if scored is not None else None,
             **counts,
         })
         print(f"{mode}: first different token index {index} ({counts['accepted']} accepted drafts)", flush=True)

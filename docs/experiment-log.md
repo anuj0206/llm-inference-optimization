@@ -150,3 +150,37 @@ The probability probe reproduced the freeform mismatch with the same executable 
 ```powershell
 python .\scripts\diagnose-ngram-parity.py .\results\ngram-prose-8k-20261121T230013Z.json
 ```
+
+## 2026-11-21 Verification scores and acceptance-based draft budget
+
+The verifier submits the last emitted token followed by the draft to the same Qwen3 model. It requests logits for every position. Causal attention restricts each position to its prefix, so the logits after the last emitted token score the first draft token. Qwen3 applies final RMS normalization and the vocabulary projection to obtain one row of logits per position. The existing sampler picks a token from each row. It accepts the matching draft prefix, emits the target token at the first mismatch, and discards the unused speculative KV entries. [Batch construction](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/tools/server/server-context.cpp#L647) · [Qwen3 output graph](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/src/models/qwen3.cpp#L55) · [Verifier sampler](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/common/sampling.cpp#L698)
+
+The earlier freeform result left open whether small numerical differences accumulated over many decode passes. The matched-prefix probe prefills the same 8,211 tokens in each process and confirms the same next token as the anchor. The first generation pass then scores the same anchor with batch sizes one, two, and nine. Stock chooses ` not` with a 0.0530 log-probability lead. Both batched passes choose ` often`, with leads of 0.00055 and 0.01167, and the synthetic verifier accepts zero drafts. One verification pass is enough to reproduce the score reversal from a common KV prefix. [Matched-prefix probe](../results/ngram-parity-8k-20261121T232921Z.json)
+
+CUDA selects matmul kernels by the number of activation columns as well as tensor type. The quantized matrix-vector path has different templates for single and multiple columns, and its fused variant is available only for the single-column case. These are places where the arithmetic can differ. The probability probe observes the end of the graph. [CUDA dispatch](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/ggml/src/ggml-cuda/ggml-cuda.cu#L2535) · [Quantized matmul templates](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/ggml/src/ggml-cuda/mmvq.cu#L1061)
+
+With `GGML_CUDA_DISABLE_FUSION=1`, all three matched-prefix arms produced the same ten output tokens. The one-token baseline itself now chose ` often` at token 21. This implicates the execution path affected by CUDA fusion and changes the stock reference at the same time. The toggle applies during prefill and decode, so the specific operation responsible is still unresolved. [Fusion-disabled probe](../results/ngram-parity-8k-20261121T233553Z.json)
+
+The opt-in `budget` policy starts each sequence at eight possible draft tokens. After every four verified drafts, it compares the emitted tokens implied by accepted prefixes with the calibrated time for the observed draft lengths. A window that misses the 1.5% advantage threshold cuts the cap in half, or quarters it when all four drafts miss. A profitable window with a fully accepted cap-sized draft can double the cap up to eight. At zero the policy skips eight decode decisions, then tries a single-token draft when a candidate is available. Successful probes resume at two. Misses increase the cooldown up to 32 decisions.
+
+The count comes from llama.cpp's existing verifier callback and uses the length actually offered after request limits. State resets at each sequence start. The budget limits candidate scoring inside the ranked policy. The alternate build recompiles the two host objects and uses the same CUDA DLL and verifier executable. A directed controller test exercised shrinking, cooldown, probe rejection, recovery, and reset. The paired benchmark uses the five archived 8K prompts, compares stock, ranked, and ranked with feedback twice, and reverses both mode and prompt order.
+
+```powershell
+.\scripts\build-adaptive-ngram.ps1 -Budget
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-prose-ngram.py .\results\ngram-cost-8k-20261121T225729Z.json `
+    --acceptance-budget .\results\ngram-prose-8k-20261121T230013Z.json
+python .\scripts\diagnose-ngram-parity.py .\results\ngram-prose-8k-20261121T230013Z.json --same-prefix
+python .\scripts\diagnose-ngram-parity.py .\results\ngram-prose-8k-20261121T230013Z.json `
+    --same-prefix --disable-cuda-fusion
+```
+
+| Workload | Stock tok/s | Ranked tok/s | Ranked + feedback tok/s | Drafted tokens per run, ranked → feedback |
+| --- | ---: | ---: | ---: | ---: |
+| Python continuation | 28.94 | 99.60 | 100.98 | 232 → 232 |
+| Project status memo | 28.98 | 42.45 | 41.66 | 189 → 175 |
+| Plain-English rewrite | 29.09 | 35.90 | 34.57 | 231 → 172 |
+| Freeform explanation | 29.11 | 31.24 | 32.18 | 204 → 89 |
+| Fiction opening | 28.98 | 28.16 | 28.27 | 141 → 52 |
+
+All 30 requests completed with 37/37 layers offloaded and a sampled 5,785 MiB peak in each session. The figures average the two passes. Feedback stayed at the initial cap on Python. Both fiction runs dropped the cap from eight to two to zero, then recovered or paused again based on probe results. The memo and rewrite lost 1.9% and 3.7% versus ranked while matching stock tokens in both runs. Freeform and fiction still diverged from stock. Freeform first changed at token 21 in both speculative policies. Fiction first changed at token 73 in ranked and 44 with feedback. The timings for divergent sequences measure throughput on different outputs. [Paired benchmark and budget decisions](../results/ngram-budget-8k-20261121T233006Z.json)

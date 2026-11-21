@@ -16,6 +16,7 @@ struct ngram_experiment {
     int probe_length = 0;
     bool ranked = false;
     bool rolling = false;
+    bool budget = false;
     std::array<double, max_draft + 1> step_us{};
 
     ngram_experiment() {
@@ -28,7 +29,8 @@ struct ngram_experiment {
         if (const char * value = std::getenv("LLM_OPT_NGRAM_POLICY")) {
             const std::string_view policy(value);
             rolling = policy == "rolling";
-            ranked = rolling || policy == "ranked";
+            budget = policy == "budget";
+            ranked = rolling || budget || policy == "ranked";
         }
         if (ranked) {
             const char * costs = std::getenv("LLM_OPT_NGRAM_STEP_US");
@@ -41,6 +43,11 @@ struct ngram_experiment {
         }
     }
 };
+
+const ngram_experiment & ngram_experiment_options() {
+    static const ngram_experiment options;
+    return options;
+}
 
 struct ngram_matches {
     std::array<std::size_t, max_matches> ends{};
@@ -104,8 +111,8 @@ double ngram_prefix_probability(std::size_t votes, std::size_t total, std::size_
 }
 
 llama_tokens ngram_ranked_draft(const ngram_experiment & experiment, const llama_tokens & history,
-                               llama_token sampled) {
-    if (history.size() < max_suffix - 1) {
+                               llama_token sampled, std::size_t cap = max_draft) {
+    if (cap == 0 || history.size() < max_suffix - 1) {
         return {};
     }
     suffix_tokens suffix;
@@ -125,7 +132,7 @@ llama_tokens ngram_ranked_draft(const ngram_experiment & experiment, const llama
         auto remaining = matches[length];
         llama_tokens draft;
         double expected = 0.0;
-        for (std::size_t offset = 0; offset < max_draft; ++offset) {
+        for (std::size_t offset = 0; offset < cap; ++offset) {
             const auto vote = vote_on_token(history, remaining, offset);
             if (vote.count == 0) {
                 break;
@@ -145,7 +152,8 @@ llama_tokens ngram_ranked_draft(const ngram_experiment & experiment, const llama
         double prefix_probability = 1.0;
         double expected = 0.0;
         auto next_matches = matches;
-        for (std::size_t offset = 0; offset < 3; ++offset) {
+        const auto rolling_cap = std::min<std::size_t>(3, cap);
+        for (std::size_t offset = 0; offset < rolling_cap; ++offset) {
             llama_token winner = 0;
             double probability = 0.0;
             for (std::size_t length = max_suffix; length >= 2; --length) {
@@ -164,7 +172,7 @@ llama_tokens ngram_ranked_draft(const ngram_experiment & experiment, const llama
             prefix_probability *= probability;
             expected += prefix_probability;
             consider(draft, expected);
-            if (offset + 1 < 3) {
+            if (offset + 1 < rolling_cap) {
                 std::move(suffix.begin() + 1, suffix.end(), suffix.begin());
                 suffix.back() = winner;
                 next_matches = find_ngram_matches(history, suffix);
@@ -174,4 +182,13 @@ llama_tokens ngram_ranked_draft(const ngram_experiment & experiment, const llama
     return best;
 }
 
+}
+
+const std::array<double, 9> * common_ngram_budget_costs() {
+    const auto & experiment = ngram_experiment_options();
+    return experiment.budget ? &experiment.step_us : nullptr;
+}
+
+llama_tokens common_ngram_budget_draft(const llama_tokens & history, llama_token sampled, std::size_t cap) {
+    return ngram_ranked_draft(ngram_experiment_options(), history, sampled, std::min(cap, max_draft));
 }

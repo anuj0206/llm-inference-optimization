@@ -1,0 +1,573 @@
+{
+  "benchmark": "ngram-prose-8k-20261121T230013Z.json",
+  "case": "prose_freeform",
+  "prompt_tokens": 8211,
+  "first_scored_token_zero_based": 20,
+  "sessions": [
+    {
+      "mode": "stock",
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-adaptive-ngram\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "512",
+        "-ub",
+        "128",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "f16",
+        "-ctv",
+        "f16",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "52971",
+        "--no-webui"
+      ],
+      "first_difference_zero_based": null,
+      "matches_benchmark": null,
+      "stock_probabilities": {
+        "id": 537,
+        "token": " not",
+        "bytes": [
+          32,
+          110,
+          111,
+          116
+        ],
+        "logprob": -0.6831068992614746,
+        "top_logprobs": [
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.6831068992614746
+          },
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7361159920692444
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.5025954246521
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.754273891448975
+          }
+        ]
+      },
+      "candidate_probabilities": {
+        "id": 537,
+        "token": " not",
+        "bytes": [
+          32,
+          110,
+          111,
+          116
+        ],
+        "logprob": -0.6831068992614746,
+        "top_logprobs": [
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.6831068992614746
+          },
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7361159920692444
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.5025954246521
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.754273891448975
+          }
+        ]
+      },
+      "stock_token": 537,
+      "candidate_token": 537,
+      "drafted": 0,
+      "accepted": 0,
+      "verifications": 0
+    },
+    {
+      "mode": "reject-one",
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-adaptive-ngram\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "512",
+        "-ub",
+        "128",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "f16",
+        "-ctv",
+        "f16",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "ngram-simple",
+        "--spec-ngram-simple-size-n",
+        "6",
+        "--spec-ngram-simple-size-m",
+        "8",
+        "--spec-synth-rates",
+        "0,0,0,0,0,0,0,0",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "52986",
+        "--no-webui"
+      ],
+      "first_difference_zero_based": 1,
+      "matches_benchmark": null,
+      "stock_probabilities": {
+        "id": 537,
+        "token": " not",
+        "bytes": [
+          32,
+          110,
+          111,
+          116
+        ],
+        "logprob": -0.6831068992614746,
+        "top_logprobs": [
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.6831068992614746
+          },
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7361159920692444
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.5025954246521
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.754273891448975
+          }
+        ]
+      },
+      "candidate_probabilities": {
+        "id": 3545,
+        "token": " often",
+        "bytes": [
+          32,
+          111,
+          102,
+          116,
+          101,
+          110
+        ],
+        "logprob": -0.7088199257850647,
+        "top_logprobs": [
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7088199257850647
+          },
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.7093692421913147
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.495921611785889
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.82832670211792
+          }
+        ]
+      },
+      "stock_token": 537,
+      "candidate_token": 3545,
+      "drafted": 8,
+      "accepted": 0,
+      "verifications": 8
+    },
+    {
+      "mode": "reject-eight",
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-adaptive-ngram\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "512",
+        "-ub",
+        "128",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "f16",
+        "-ctv",
+        "f16",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "ngram-simple",
+        "--spec-ngram-simple-size-n",
+        "6",
+        "--spec-ngram-simple-size-m",
+        "8",
+        "--spec-synth-rates",
+        "0,0,0,0,0,0,0,0",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55581",
+        "--no-webui"
+      ],
+      "first_difference_zero_based": 1,
+      "matches_benchmark": null,
+      "stock_probabilities": {
+        "id": 537,
+        "token": " not",
+        "bytes": [
+          32,
+          110,
+          111,
+          116
+        ],
+        "logprob": -0.6831068992614746,
+        "top_logprobs": [
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.6831068992614746
+          },
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7361159920692444
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.5025954246521
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.754273891448975
+          }
+        ]
+      },
+      "candidate_probabilities": {
+        "id": 3545,
+        "token": " often",
+        "bytes": [
+          32,
+          111,
+          102,
+          116,
+          101,
+          110
+        ],
+        "logprob": -0.7036755681037903,
+        "top_logprobs": [
+          {
+            "id": 3545,
+            "token": " often",
+            "bytes": [
+              32,
+              111,
+              102,
+              116,
+              101,
+              110
+            ],
+            "logprob": -0.7036755681037903
+          },
+          {
+            "id": 537,
+            "token": " not",
+            "bytes": [
+              32,
+              110,
+              111,
+              116
+            ],
+            "logprob": -0.7153447270393372
+          },
+          {
+            "id": 5990,
+            "token": " usually",
+            "bytes": [
+              32,
+              117,
+              115,
+              117,
+              97,
+              108,
+              108,
+              121
+            ],
+            "logprob": -4.480252742767334
+          },
+          {
+            "id": 14696,
+            "token": " somewhere",
+            "bytes": [
+              32,
+              115,
+              111,
+              109,
+              101,
+              119,
+              104,
+              101,
+              114,
+              101
+            ],
+            "logprob": -5.762704372406006
+          }
+        ]
+      },
+      "stock_token": 537,
+      "candidate_token": 3545,
+      "drafted": 36,
+      "accepted": 0,
+      "verifications": 8
+    }
+  ]
+}
