@@ -311,6 +311,10 @@ static json timing(std::vector<std::unique_ptr<Weights>> &weights,bool rotate,bo
     return rows;
 }
 
+#ifdef Q4_TRAFFIC
+#include "traffic-counters.cuh"
+#endif
+
 int main(int argc,char **argv) {
     json result;
     try {
@@ -364,6 +368,9 @@ int main(int argc,char **argv) {
         bool all=true;for(const auto &c:result["correctness"])all=all&&c.at("passed").get<bool>();
         result["all_correctness_passed"]=all;
         if(!all)throw std::runtime_error("Correctness failed; performance tests skipped");
+#ifdef Q4_TRAFFIC
+        result["traffic"] = measure_traffic(weights, stream, prop.l2CacheSize);
+#else
         std::vector<std::array<bool,3>> modes;
         for(bool rotate:{false,true})for(bool include_quant:{false,true})for(bool split:{false,true})modes.push_back({rotate,include_quant,split});
         std::mt19937 ordering(42);std::shuffle(modes.begin(),modes.end(),ordering);
@@ -374,6 +381,7 @@ int main(int argc,char **argv) {
                 result["timings"].push_back(std::move(row));
             }
         }
+#endif
         result["status"]="passed";check(cudaStreamDestroy(stream));
         std::ofstream(argv[2])<<result.dump(2)<<"\n";
         return 0;

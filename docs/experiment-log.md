@@ -41,3 +41,7 @@ Keeping four warps per block and processing two rows halved the grid size. Both 
 ## 2026-11-21 Streaming-read bandwidth
 
 Advanced Threat Defense blocked both Nsight Compute attempts. A CUDA-event benchmark ran without elevation and measured approximately 187.5–187.7 GB/s for 256 and 512 MiB input buffers in both size orders. The stock Q4_K kernel's nominal weight throughput was about 183.4 GB/s. See the [streaming-read results](rtx4050-tuning.md#streaming-read-bandwidth) for the method, raw data and limits of the comparison.
+
+## 2026-11-21 CUPTI memory counters
+
+Added an opt-in, in-process CUPTI build of the isolated stock kernel harness. The elevated run passed the 36 correctness cases and measured 54.010 MiB of DRAM reads and 54.405 MiB of L2 read sectors after the rotation lead-in. The 324 MiB of L1 sector requests and the disassembly point to fewer metadata load instructions as a candidate to test. See the [counter method and results](q4-k-benchmark.md#in-process-memory-counters).

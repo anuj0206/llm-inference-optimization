@@ -145,3 +145,28 @@ Both runs on AC passed 36/36 cases. The two-row candidate had zero measured diff
 | Repeat, activation quantization included | 311.347 | 311.841 | +0.16% |
 
 The extra accumulators raised compiled register use from 56 to 64 per thread and shared memory from 768 to 1,536 bytes per block. CUDA calculated a residency ceiling of eight blocks per SM (32 warps, 66.7% occupancy), down from nine blocks (36 warps, 75%) for stock. This is a launch-resource bound. With slightly higher latency in both runs, the candidate stays in the isolated harness and inference uses the stock kernel.
+
+## In-process memory counters
+
+The optional counter build links NVIDIA CUPTI and uses the toolkit's Range Profiling API. It runs the same correctness cases before profiling the stock fused kernel directly. It measures one launch on layer 17 with an already quantized Q8_1 activation. Each replay pass restores the cache lead-in by running the other 35 layers in order or by running the target pair 35 times. CUPTI cache flushing is disabled so the two lead-ins can produce different cache states. The lead-in launches are outside the measured range.
+
+Build from normal PowerShell. On systems with restricted GPU counters, run the last command from administrator PowerShell under the project user's account. The build requires only the additional `cuda_cupti` component. [NVIDIA counter permissions](https://developer.nvidia.com/ERR_NVGPUCTRPERM)
+
+```powershell
+.\.venv\Scripts\python.exe scripts\install_cuda.py --components cuda_cupti
+.\scripts\build-q4-bench.ps1 -Counters
+.\scripts\run-q4-bench.ps1 -Counters
+```
+
+The output records DRAM read/write bytes, L2 read sectors and sector hit rate, and L1 global load sectors and requests. The unique packed weight payload is 56,623,104 bytes, plus 4,608 bytes of unique Q8_1 activations. Compare DRAM reads against that payload in the rotating case. Compare L2 sector bytes and L1 sectors per request to investigate repeated cached loads or transaction overhead. These counters aggregate the measured range. An excess over the weight payload can include activation traffic, overlap between requests, and extra sectors from alignment. Identifying the contributing load instructions requires a source or instruction-level check.
+
+The regular-user run passed all 36 correctness cases before CUPTI reported insufficient privileges. The elevated run passed the same checks and collected both ranges in two counter passes each. [Raw counter report](../results/q4-traffic-20261121T192402Z.json)
+
+| Layer 17 cache lead-in | DRAM read | L2 read sectors × 32 B | L1 global-load sectors × 32 B | L1 sectors/request |
+| --- | ---: | ---: | ---: | ---: |
+| Other 35 layers | 54.010 MiB | 54.405 MiB | 324 MiB | 6 |
+| Same pair 35 times | 54.030 MiB | 54.429 MiB | 324 MiB | 6 |
+
+With rotation, DRAM read 10,880 bytes above the 54 MiB weight payload, or 0.019%. L2 read sector volume was 0.75% above the payload. Repeating the same pair gave similar totals. These aggregate measurements leave little evidence of extra DRAM transfers in this launch. The 324 MiB figure counts L1 sector requests, including repeated sector touches. [NVIDIA memory counter definitions](https://docs.nvidia.com/nsight-compute/ProfilingGuide/#l1tex-cache)
+
+Disassembly and the Q4_K dot helper account for all 1,769,472 L1 global-load requests. Each of 12,288 CUDA blocks has four warps, two inner-loop iterations and 18 load instructions per warp per iteration. Six instructions load Q8_1 activation fields shared by both dot products. The other 12 load the up and gate weights. In each iteration, each weight matrix contributes two loads for packed values and four for metadata fields. The three scale/minimum loads and one superblock factor load address the same 16-byte header within each Q4_K block. A candidate can load that header together and unpack the existing fields from registers. Compare L1 requests, register use and elapsed time against stock under the same output checks.
