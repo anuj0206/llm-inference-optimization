@@ -15,16 +15,34 @@ lines = ["# Isolated Q4_K benchmark result", "", f"Raw result: `{path.name}`. Ru
          f"Status: **{data['status']}**. Correctness cases: **{sum(c['passed'] for c in checks)}/{len(checks)}**.", "",
          "The operation is the stock fused up/gate/SwiGLU path, N=12288, K=4096, one token. Weights come from the verified Qwen3 8B Q4_K_M file. No custom optimization is being claimed.", "",
          "## Numerical validation", "", "| Comparison | Violating values | Worst case relative L2 error |", "| --- | ---: | ---: |"]
-for key in ("up_dot", "gate_dot", "fused_vs_cpu", "fused_vs_unfused"):
+for key in ("up_dot", "gate_dot", "fused_vs_cpu", "fused_vs_unfused", "two_warp_vs_cpu", "two_warp_vs_stock",
+            "two_warp_vs_stock_tight_diagnostic"):
+    if not all(key in case for case in checks):
+        continue
     lines.append(f"| {key} | {sum(c[key]['failures'] for c in checks)} | {max(c[key]['relative_l2_error'] for c in checks):.3g} |")
-lines += ["", f"Checker negative controls detected: **{sum(c['negative_controls_detected'] for c in checks)}**. These are deliberately corrupted host output values, not GPU memory-safety tests.", "",
-          "## CUDA-event timings", "", "Values are microseconds per operation; variability is the standard deviation of 20 batch means, each containing 100 operations after 200 warmup calls.", "",
+if not data["timings"]:
+    raise SystemExit(f"No timing data in {path}. See the raw result for the failure.")
+sample = data["timings"][0]
+lines += ["", f"Checker negative controls detected: **{sum(c['negative_controls_detected'] for c in checks)}**.", "",
+          "## CUDA-event timings", "", f"Values are microseconds per operation. Variability is the standard deviation of {len(sample['samples_us'])} batch means, each containing {sample['calls_per_sample']} operations after {sample['warmup_calls']} warmup calls.", "",
           "| Weight access | Activation path | Implementation | Mean us | Median us | Batch-mean SD us |", "| --- | --- | --- | ---: | ---: | ---: |"]
 if all("activation_quantization" in c for c in checks):
     position = lines.index("## CUDA-event timings")
     lines[position:position] = [f"Independent activation quantization check violations: **{sum(c['activation_quantization']['failures'] for c in checks)}**. Reconstruction error is recorded separately from kernel error in the raw result.", ""]
 for row in sorted(data["timings"], key=lambda r: (r["mode"], r["path"], r["implementation"])):
     lines.append(f"| {row['mode']} | {row['path']} | {row['implementation']} | {row['mean_us']:.3f} | {row['median_us']:.3f} | {row['stddev_batch_mean_us']:.3f} |")
+if "fused_sample_order" in data:
+    lines += ["", "Each stock/candidate pair starts at the same layer. The benchmark alternates which variant runs first.", "",
+              "| Weight access | Activation path | Two-warp latency change vs stock | Pairs where two warps won |",
+              "| --- | --- | ---: | ---: |"]
+    timings = {(r["mode"], r["path"], r["implementation"]): r for r in data["timings"]}
+    for (mode, path_name, implementation), stock in sorted(timings.items()):
+        if implementation != "stock_fused":
+            continue
+        two_warp = timings[mode, path_name, "two_warp_fused"]
+        change = 100 * (two_warp["mean_us"] / stock["mean_us"] - 1)
+        wins = sum(candidate < baseline for candidate, baseline in zip(two_warp["samples_us"], stock["samples_us"], strict=True))
+        lines.append(f"| {mode} | {path_name} | {change:+.2f}% | {wins}/{len(stock['samples_us'])} |")
 lines += ["", "The unfused implementation is a correctness/control comparison. Stock llama.cpp already performs the fusion. The GPU-stream timer includes launch gaps between queued work; it is not a host-wall-clock or model tokens/sec measurement. Quantization-inclusive and prepared-activation cases are separate runs, so their small difference also contains clock/ordering variability.", "",
           "One-pair reuse reads a 54 MiB pair; the streaming case rotates 36 distinct real layer pairs totaling 1944 MiB. Neither is the complete inference workload. See [the harness guide](../docs/q4-k-benchmark.md) for correctness bounds, cache methodology and reproduction.", ""]
 summary = root / "results/q4-microbench-summary.md"

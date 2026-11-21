@@ -25,6 +25,19 @@ start = quant.index("__launch_bounds__(CUDA_QUANTIZE_BLOCK_SIZE, 1)")
 end = quant.index("__device__ __forceinline__ uint8_t compute_e8m0_scale", start)
 quant_prefix = quant[start:end]
 (build / "stock_mmvq.cuh").write_text(prefix)
+kernel_start = prefix.index("template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false>")
+stock_kernel = prefix[kernel_start:]
+two_warp_kernel = stock_kernel
+for old, new in (
+    ("calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters)*", "2*"),
+    ("static __global__ void mul_mat_vec_q(", "static __global__ void mul_mat_vec_q_two_warps("),
+    ("constexpr int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);", "constexpr int nwarps = 2;"),
+):
+    if two_warp_kernel.count(old) != 1:
+        raise SystemExit(f"Expected one kernel substitution for {old!r}")
+    two_warp_kernel = two_warp_kernel.replace(old, new)
+(build / "stock_mmvq_kernel.cuh").write_text(stock_kernel)
+(build / "two_warp_mmvq.cuh").write_text(two_warp_kernel)
 (build / "stock_quantize.cuh").write_text(quant_prefix)
 (build / "llama.cpp-LICENSE").write_bytes((source / "LICENSE").read_bytes())
 spec = importlib.util.spec_from_file_location("inventory", Path(__file__).with_name("inspect-q4-k.py"))
@@ -52,6 +65,7 @@ fixture = {"model_path": str(model), "model_manifest": manifest, "source_commit"
            "source_mmvq_sha256": hashlib.sha256((source / "ggml/src/ggml-cuda/mmvq.cu").read_bytes()).hexdigest(),
            "source_quantize_sha256": hashlib.sha256((source / "ggml/src/ggml-cuda/quantize.cu").read_bytes()).hexdigest(),
            "generated_mmvq_sha256": hashlib.sha256((build / "stock_mmvq.cuh").read_bytes()).hexdigest(),
+           "generated_two_warp_sha256": hashlib.sha256((build / "two_warp_mmvq.cuh").read_bytes()).hexdigest(),
            "generated_quantize_sha256": hashlib.sha256((build / "stock_quantize.cuh").read_bytes()).hexdigest(),
            "n": 12288, "k": 4096, "pairs": pairs}
 (build / "fixture.json").write_text(json.dumps(fixture, indent=2) + "\n")

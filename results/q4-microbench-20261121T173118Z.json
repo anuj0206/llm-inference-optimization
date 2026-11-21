@@ -1,0 +1,3108 @@
+{
+  "fixture": {
+    "model_path": "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+    "model_manifest": {
+      "repository": "Qwen/Qwen3-8B-GGUF",
+      "revision": "7c41481f57cb95916b40956ab2f0b139b296d974",
+      "filename": "Qwen3-8B-Q4_K_M.gguf",
+      "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+      "size_bytes": 5027783488,
+      "license": "Apache-2.0"
+    },
+    "source_commit": "8bf88ba9368e70fe3ba1b0001b34e70ffc713716",
+    "source_mmvq_sha256": "aae730c729502e5482a24a11575d63bd822604b88a84cfa88e5ab18a44d0a450",
+    "source_quantize_sha256": "c213a142cb90da34d994cf64b9325147313eed276388d07f42dc81f4de0931e2",
+    "generated_mmvq_sha256": "eb44417039773b388a895d2b69faf839173d0e64de9f85067bea6108624a0988",
+    "generated_two_warp_sha256": "aff4eb8c64ca553673267f3d0a605fc4de042c01ea95f4a0c791bf3f39ba36d2",
+    "generated_quantize_sha256": "8bc23fa0e7024e0cb60c06a85e0c200da686ebdcb862d0fe87b9f450ce721cb3",
+    "n": 12288,
+    "k": 4096,
+    "pairs": [
+      {
+        "layer": 0,
+        "up_offset": 960845632,
+        "gate_offset": 932517696
+      },
+      {
+        "layer": 1,
+        "up_offset": 1083464512,
+        "gate_offset": 1055136576
+      },
+      {
+        "layer": 2,
+        "up_offset": 1206083392,
+        "gate_offset": 1177755456
+      },
+      {
+        "layer": 3,
+        "up_offset": 1328702272,
+        "gate_offset": 1300374336
+      },
+      {
+        "layer": 4,
+        "up_offset": 1437263680,
+        "gate_offset": 1408935744
+      },
+      {
+        "layer": 5,
+        "up_offset": 1545825088,
+        "gate_offset": 1517497152
+      },
+      {
+        "layer": 6,
+        "up_offset": 1668443968,
+        "gate_offset": 1640116032
+      },
+      {
+        "layer": 7,
+        "up_offset": 1777005376,
+        "gate_offset": 1748677440
+      },
+      {
+        "layer": 8,
+        "up_offset": 1885566784,
+        "gate_offset": 1857238848
+      },
+      {
+        "layer": 9,
+        "up_offset": 2008185664,
+        "gate_offset": 1979857728
+      },
+      {
+        "layer": 10,
+        "up_offset": 2116747072,
+        "gate_offset": 2088419136
+      },
+      {
+        "layer": 11,
+        "up_offset": 2225308480,
+        "gate_offset": 2196980544
+      },
+      {
+        "layer": 12,
+        "up_offset": 2347927360,
+        "gate_offset": 2319599424
+      },
+      {
+        "layer": 13,
+        "up_offset": 2456488768,
+        "gate_offset": 2428160832
+      },
+      {
+        "layer": 14,
+        "up_offset": 2565050176,
+        "gate_offset": 2536722240
+      },
+      {
+        "layer": 15,
+        "up_offset": 2687669056,
+        "gate_offset": 2659341120
+      },
+      {
+        "layer": 16,
+        "up_offset": 2796230464,
+        "gate_offset": 2767902528
+      },
+      {
+        "layer": 17,
+        "up_offset": 2904791872,
+        "gate_offset": 2876463936
+      },
+      {
+        "layer": 18,
+        "up_offset": 3027410752,
+        "gate_offset": 2999082816
+      },
+      {
+        "layer": 19,
+        "up_offset": 3135972160,
+        "gate_offset": 3107644224
+      },
+      {
+        "layer": 20,
+        "up_offset": 3244533568,
+        "gate_offset": 3216205632
+      },
+      {
+        "layer": 21,
+        "up_offset": 3367152448,
+        "gate_offset": 3338824512
+      },
+      {
+        "layer": 22,
+        "up_offset": 3475713856,
+        "gate_offset": 3447385920
+      },
+      {
+        "layer": 23,
+        "up_offset": 3584275264,
+        "gate_offset": 3555947328
+      },
+      {
+        "layer": 24,
+        "up_offset": 3706894144,
+        "gate_offset": 3678566208
+      },
+      {
+        "layer": 25,
+        "up_offset": 3815455552,
+        "gate_offset": 3787127616
+      },
+      {
+        "layer": 26,
+        "up_offset": 3924016960,
+        "gate_offset": 3895689024
+      },
+      {
+        "layer": 27,
+        "up_offset": 4046635840,
+        "gate_offset": 4018307904
+      },
+      {
+        "layer": 28,
+        "up_offset": 4155197248,
+        "gate_offset": 4126869312
+      },
+      {
+        "layer": 29,
+        "up_offset": 4263758656,
+        "gate_offset": 4235430720
+      },
+      {
+        "layer": 30,
+        "up_offset": 4386377536,
+        "gate_offset": 4358049600
+      },
+      {
+        "layer": 31,
+        "up_offset": 4508996416,
+        "gate_offset": 4480668480
+      },
+      {
+        "layer": 32,
+        "up_offset": 4631615296,
+        "gate_offset": 4603287360
+      },
+      {
+        "layer": 33,
+        "up_offset": 4754234176,
+        "gate_offset": 4725906240
+      },
+      {
+        "layer": 34,
+        "up_offset": 4876853056,
+        "gate_offset": 4848525120
+      },
+      {
+        "layer": 35,
+        "up_offset": 4999471936,
+        "gate_offset": 4971144000
+      }
+    ]
+  },
+  "correctness": [
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.3553108146879822e-07,
+        "rmse": 3.188499239031049e-08,
+        "relative_l2_error": 1.3429913586009583e-07,
+        "max_error_over_tolerance": 0.0005173439897078549
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.094832537608454e-08,
+        "rmse": 1.6815572662918397e-08,
+        "relative_l2_error": 1.3695717009652905e-07,
+        "max_error_over_tolerance": 0.0004702280504388603
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9138582519072642e-08,
+        "rmse": 3.0157259295016946e-09,
+        "relative_l2_error": 1.9449750662434418e-07,
+        "max_error_over_tolerance": 0.00015808468044640388
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9574613105709524e-08,
+        "rmse": 3.051059960857252e-09,
+        "relative_l2_error": 1.9677635462256993e-07,
+        "max_error_over_tolerance": 0.0001802725117041972
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9802322387695313e-08,
+        "rmse": 2.404394783749893e-09,
+        "relative_l2_error": 1.5507005538805018e-07,
+        "max_error_over_tolerance": 8.899673541237812e-05
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9802322387695313e-08,
+        "rmse": 2.404394783749893e-09,
+        "relative_l2_error": 1.5507005538805018e-07,
+        "max_error_over_tolerance": 0.0005591405160374919
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008121132850646973,
+        "relative_l2_reconstruction_error": 0.0037271690706955746
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 5.487599992193282e-07,
+        "rmse": 1.0188720352357956e-07,
+        "relative_l2_error": 8.548584574852819e-08,
+        "max_error_over_tolerance": 0.00045623918944203145
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9994407668709755e-07,
+        "rmse": 5.3384305929968264e-08,
+        "relative_l2_error": 8.440810710339423e-08,
+        "max_error_over_tolerance": 0.00045087578634036955
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.0613210186249944e-06,
+        "rmse": 6.272849027610056e-08,
+        "relative_l2_error": 1.3442103203010442e-07,
+        "max_error_over_tolerance": 0.00029724857364075427
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.1800000061512605e-06,
+        "rmse": 6.265558555989258e-08,
+        "relative_l2_error": 1.3426480433915564e-07,
+        "max_error_over_tolerance": 0.000263584645364184
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.940696716308594e-07,
+        "rmse": 7.166141085503317e-08,
+        "relative_l2_error": 1.535634072514444e-07,
+        "max_error_over_tolerance": 0.00020591616318610696
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.940696716308594e-07,
+        "rmse": 7.166141085503317e-08,
+        "relative_l2_error": 1.535634072514444e-07,
+        "max_error_over_tolerance": 0.011150202896525373
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003871964574627642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.192728273570538e-09,
+        "rmse": 1.925444077861189e-09,
+        "relative_l2_error": 5.8672135407326575e-08,
+        "max_error_over_tolerance": 0.00039439499754228256
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 9.604264050722122e-09,
+        "rmse": 1.0072799538479694e-09,
+        "relative_l2_error": 5.8521780327379686e-08,
+        "max_error_over_tolerance": 0.0004753299919167864
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 4.5084186861207853e-10,
+        "rmse": 2.976530491358553e-11,
+        "relative_l2_error": 1.0075107339069751e-07,
+        "max_error_over_tolerance": 8.634641653339097e-06
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 4.5084186861207853e-10,
+        "rmse": 2.976530491358553e-11,
+        "relative_l2_error": 1.0075107339069751e-07,
+        "max_error_over_tolerance": 8.634641653339097e-06
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.1154810408697813e-10,
+        "rmse": 2.3509188447625458e-11,
+        "relative_l2_error": 9.715716941051155e-08,
+        "max_error_over_tolerance": 5.512861317667453e-06
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.901235221652314e-11,
+        "rmse": 1.2543064199615231e-11,
+        "relative_l2_error": 9.744994386451614e-08,
+        "max_error_over_tolerance": 3.909275883363922e-06
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.55340237119264e-14,
+        "rmse": 2.390725900833168e-15,
+        "relative_l2_error": 1.42342845434234e-07,
+        "max_error_over_tolerance": 5.10478069803265e-10
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.5609344856016726e-14,
+        "rmse": 2.4318446895216908e-15,
+        "relative_l2_error": 1.447910413485768e-07,
+        "max_error_over_tolerance": 7.118993281740075e-10
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.842170943040401e-14,
+        "rmse": 2.371373512141274e-15,
+        "relative_l2_error": 1.4119061335739153e-07,
+        "max_error_over_tolerance": 2.841020528984652e-10
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.842170943040401e-14,
+        "rmse": 2.371373512141274e-15,
+        "relative_l2_error": 1.4119061335739153e-07,
+        "max_error_over_tolerance": 5.684341208454524e-10
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 4.364090273156762e-06,
+        "relative_l2_reconstruction_error": 0.011250491914556642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 0,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.3644166756421328e-05,
+        "rmse": 3.1696970333699243e-06,
+        "relative_l2_error": 1.2905016895893665e-07,
+        "max_error_over_tolerance": 0.0005823076456984681
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.221744792535901e-06,
+        "rmse": 1.6684309334361907e-06,
+        "relative_l2_error": 1.2743364755576438e-07,
+        "max_error_over_tolerance": 0.0005918527287318928
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0005053020390732854,
+        "rmse": 4.35488642793898e-05,
+        "relative_l2_error": 1.7912079904847638e-07,
+        "max_error_over_tolerance": 0.0004299751604208581
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00043079316833427583,
+        "rmse": 4.338244760573182e-05,
+        "relative_l2_error": 1.784363107603464e-07,
+        "max_error_over_tolerance": 0.0004544287443150015
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00048828125,
+        "rmse": 3.532648427002705e-05,
+        "relative_l2_error": 1.4530133431490208e-07,
+        "max_error_over_tolerance": 0.00020800601056751705
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00048828125,
+        "rmse": 3.532648427002705e-05,
+        "relative_l2_error": 1.4530133431490208e-07,
+        "max_error_over_tolerance": 0.6516709792944516
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.0037936436190503966
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.2555403827718692e-07,
+        "rmse": 2.5809359858917162e-08,
+        "relative_l2_error": 1.3322077638764342e-07,
+        "max_error_over_tolerance": 0.000543119867475455
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.1215490758331725e-07,
+        "rmse": 1.8923470471737865e-08,
+        "relative_l2_error": 1.3278350739078595e-07,
+        "max_error_over_tolerance": 0.000531192931534558
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.0058562708323855e-08,
+        "rmse": 2.7634290608442526e-09,
+        "relative_l2_error": 1.9578537509200203e-07,
+        "max_error_over_tolerance": 0.00018116837336223048
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.7696309018731e-08,
+        "rmse": 2.7948338612781e-09,
+        "relative_l2_error": 1.9801036458775257e-07,
+        "max_error_over_tolerance": 0.00019302824234102996
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9802322387695313e-08,
+        "rmse": 2.1808214113576534e-09,
+        "relative_l2_error": 1.5450837489765884e-07,
+        "max_error_over_tolerance": 8.5666189484525e-05
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.9802322387695313e-08,
+        "rmse": 2.1808214113576534e-09,
+        "relative_l2_error": 1.5450837489765884e-07,
+        "max_error_over_tolerance": 0.0005530406339969341
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008121132850646973,
+        "relative_l2_reconstruction_error": 0.0037271690706955746
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.886452759616077e-07,
+        "rmse": 8.058683820265543e-08,
+        "relative_l2_error": 8.346854224272023e-08,
+        "max_error_over_tolerance": 0.0005002030082423562
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.160857886541635e-07,
+        "rmse": 5.8894971231295495e-08,
+        "relative_l2_error": 8.234071437620082e-08,
+        "max_error_over_tolerance": 0.000512177774812825
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 6.299279449173412e-07,
+        "rmse": 5.281844856494574e-08,
+        "relative_l2_error": 1.3352318978209532e-07,
+        "max_error_over_tolerance": 0.00025185152841382543
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.901922702835407e-07,
+        "rmse": 5.291962315756981e-08,
+        "relative_l2_error": 1.3377895561201094e-07,
+        "max_error_over_tolerance": 0.0003162970827390128
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 9.5367431640625e-07,
+        "rmse": 6.477024704496057e-08,
+        "relative_l2_error": 1.637369164038383e-07,
+        "max_error_over_tolerance": 0.00016092057944792887
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 9.5367431640625e-07,
+        "rmse": 6.477024704496057e-08,
+        "relative_l2_error": 1.637369164038383e-07,
+        "max_error_over_tolerance": 0.00684993062390264
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003871964574627642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.872586138546467e-09,
+        "rmse": 1.536695986405213e-09,
+        "relative_l2_error": 5.940334912828805e-08,
+        "max_error_over_tolerance": 0.00038279183083879083
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.3387762010097504e-08,
+        "rmse": 1.1284973368924414e-09,
+        "relative_l2_error": 6.105479451726082e-08,
+        "max_error_over_tolerance": 0.0006673833538265849
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.077726413568821e-10,
+        "rmse": 2.503404744205853e-11,
+        "relative_l2_error": 1.0549818632401366e-07,
+        "max_error_over_tolerance": 5.918525520135306e-06
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.077726413568821e-10,
+        "rmse": 2.503404744205853e-11,
+        "relative_l2_error": 1.0549818632401366e-07,
+        "max_error_over_tolerance": 5.918525520135306e-06
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.58548787618929e-11,
+        "rmse": 1.8615567163616848e-11,
+        "relative_l2_error": 9.744524972906627e-08,
+        "max_error_over_tolerance": 4.254059415826788e-06
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.598277645432972e-11,
+        "rmse": 1.3861537534902828e-11,
+        "relative_l2_error": 9.792576412269885e-08,
+        "max_error_over_tolerance": 4.251836659373212e-06
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.749419278574243e-14,
+        "rmse": 2.028622552265373e-15,
+        "relative_l2_error": 1.4911587204937292e-07,
+        "max_error_over_tolerance": 3.49804648851336e-10
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.640127163329225e-14,
+        "rmse": 2.021958766259498e-15,
+        "relative_l2_error": 1.4862604398337475e-07,
+        "max_error_over_tolerance": 3.279278904518369e-10
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.7763568394002505e-14,
+        "rmse": 2.021156768669981e-15,
+        "relative_l2_error": 1.4856709165615494e-07,
+        "max_error_over_tolerance": 1.7759583529481086e-10
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.7763568394002505e-14,
+        "rmse": 2.021156768669981e-15,
+        "relative_l2_error": 1.4856709165615494e-07,
+        "max_error_over_tolerance": 3.552713678800501e-10
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 4.364090273156762e-06,
+        "relative_l2_reconstruction_error": 0.011250491914556642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 17,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.2287753634154797e-05,
+        "rmse": 2.5279138104776697e-06,
+        "relative_l2_error": 1.3253859937798239e-07,
+        "max_error_over_tolerance": 0.0006441492096506749
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.437527528963983e-06,
+        "rmse": 1.8480510009133813e-06,
+        "relative_l2_error": 1.3091884687048505e-07,
+        "max_error_over_tolerance": 0.0006418725351062162
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0004027630124028292,
+        "rmse": 3.877959500816937e-05,
+        "relative_l2_error": 1.8504041135422357e-07,
+        "max_error_over_tolerance": 0.00043786090268842557
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0004971629271040001,
+        "rmse": 3.897676836800327e-05,
+        "relative_l2_error": 1.8598124221138113e-07,
+        "max_error_over_tolerance": 0.00042506185430913625
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00048828125,
+        "rmse": 3.0920057159575964e-05,
+        "relative_l2_error": 1.4753790326279282e-07,
+        "max_error_over_tolerance": 0.0001965758897661968
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00048828125,
+        "rmse": 3.0920057159575964e-05,
+        "relative_l2_error": 1.4753790326279282e-07,
+        "max_error_over_tolerance": 0.9918387091910879
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.0037936436190503966
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.497732450341573e-07,
+        "rmse": 6.093538955560588e-08,
+        "relative_l2_error": 1.365626313817949e-07,
+        "max_error_over_tolerance": 0.0006393203780248286
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.9033132048207335e-07,
+        "rmse": 2.027421459635913e-08,
+        "relative_l2_error": 1.4205360076183775e-07,
+        "max_error_over_tolerance": 0.0007376170821569569
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.077435965063827e-08,
+        "rmse": 6.746564036615988e-09,
+        "relative_l2_error": 2.0492868045654192e-07,
+        "max_error_over_tolerance": 0.0002563641914592968
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.447173110992523e-08,
+        "rmse": 6.8349623523103825e-09,
+        "relative_l2_error": 2.0761380285240366e-07,
+        "max_error_over_tolerance": 0.0002343500598520742
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.940696716308594e-08,
+        "rmse": 5.130402068613173e-09,
+        "relative_l2_error": 1.558373285078042e-07,
+        "max_error_over_tolerance": 9.577740995890913e-05
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 8.940696716308594e-08,
+        "rmse": 5.130402068613173e-09,
+        "relative_l2_error": 1.558373285078042e-07,
+        "max_error_over_tolerance": 0.0012185264765494578
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008121132850646973,
+        "relative_l2_reconstruction_error": 0.0037271690706955746
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.40088377520442e-06,
+        "rmse": 1.9103480090988534e-07,
+        "relative_l2_error": 8.461644584252006e-08,
+        "max_error_over_tolerance": 0.0004549471264442428
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.245513653382659e-07,
+        "rmse": 6.107440907725063e-08,
+        "relative_l2_error": 8.190030979926326e-08,
+        "max_error_over_tolerance": 0.0004356791707724871
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.1615314544097828e-06,
+        "rmse": 1.5921872673130819e-07,
+        "relative_l2_error": 1.3585070912718387e-07,
+        "max_error_over_tolerance": 0.000263319965472083
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.044583320426341e-06,
+        "rmse": 1.555438323959345e-07,
+        "relative_l2_error": 1.3271516714869235e-07,
+        "max_error_over_tolerance": 0.0002650533355783048
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.814697265625e-06,
+        "rmse": 1.8641216981638575e-07,
+        "relative_l2_error": 1.590530571259137e-07,
+        "max_error_over_tolerance": 0.00018116447649399865
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.814697265625e-06,
+        "rmse": 1.8641216981638575e-07,
+        "relative_l2_error": 1.590530571259137e-07,
+        "max_error_over_tolerance": 0.017640466996082786
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003871964574627642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.7939677238464355e-08,
+        "rmse": 3.581644914886322e-09,
+        "relative_l2_error": 5.615793488216532e-08,
+        "max_error_over_tolerance": 0.0013629212289553762
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.2747477740049362e-08,
+        "rmse": 1.1122300995561759e-09,
+        "relative_l2_error": 5.765566956836532e-08,
+        "max_error_over_tolerance": 0.0006308889616776756
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 6.553682492527191e-10,
+        "rmse": 6.419968243731693e-11,
+        "relative_l2_error": 9.841041673248308e-08,
+        "max_error_over_tolerance": 1.2105198405030493e-05
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 6.553682492527191e-10,
+        "rmse": 6.419968243731693e-11,
+        "relative_l2_error": 9.841041673248308e-08,
+        "max_error_over_tolerance": 1.2105198405030493e-05
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 2.5056579033844173e-10,
+        "rmse": 4.458948181596113e-11,
+        "relative_l2_error": 9.995343518998415e-08,
+        "max_error_over_tolerance": 1.2166527689500896e-05
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 9.237766107617063e-11,
+        "rmse": 1.4754413457946117e-11,
+        "relative_l2_error": 1.0303474206527875e-07,
+        "max_error_over_tolerance": 4.575220669678717e-06
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 6.599489890408041e-14,
+        "rmse": 5.115672084685483e-15,
+        "relative_l2_error": 1.5225503442986276e-07,
+        "max_error_over_tolerance": 1.319005884592967e-09
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 5.620020255474229e-14,
+        "rmse": 5.123814856311019e-15,
+        "relative_l2_error": 1.524973834220728e-07,
+        "max_error_over_tolerance": 1.1230582593689461e-09
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.105427357601002e-14,
+        "rmse": 4.931101746371481e-15,
+        "relative_l2_error": 1.4676176638481604e-07,
+        "max_error_over_tolerance": 7.09944850512511e-10
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 7.105427357601002e-14,
+        "rmse": 4.931101746371481e-15,
+        "relative_l2_error": 1.4676176638481604e-07,
+        "max_error_over_tolerance": 1.4210853021136312e-09
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 4.364090273156762e-06,
+        "relative_l2_reconstruction_error": 0.011250491914556642
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": 35,
+      "n": 12288,
+      "k": 4096,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 3.053620457649231e-05,
+        "rmse": 6.108953966006299e-06,
+        "relative_l2_error": 1.3290060935624416e-07,
+        "max_error_over_tolerance": 0.001166024747025181
+      },
+      "gate_dot": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 1.866930688265711e-05,
+        "rmse": 2.0348562106013256e-06,
+        "relative_l2_error": 1.3890465448736375e-07,
+        "max_error_over_tolerance": 0.000898663940170524
+      },
+      "fused_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0018542136215273786,
+        "rmse": 0.00011212420177292642,
+        "relative_l2_error": 1.89314269760031e-07,
+        "max_error_over_tolerance": 0.0009612427746865054
+      },
+      "fused_vs_unfused": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.0020983542465273786,
+        "rmse": 0.00011117818270348433,
+        "relative_l2_error": 1.877169793759871e-07,
+        "max_error_over_tolerance": 0.0008558821997524897
+      },
+      "two_warp_vs_stock": {
+        "count": 12288,
+        "failures": 0,
+        "max_abs_error": 0.00146484375,
+        "rmse": 8.381412563973465e-05,
+        "relative_l2_error": 1.415145856433322e-07,
+        "max_error_over_tolerance": 0.00017809095835983946
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 12288,
+        "failures": 3,
+        "max_abs_error": 0.00146484375,
+        "rmse": 8.381412563973465e-05,
+        "relative_l2_error": 1.415145856433322e-07,
+        "max_error_over_tolerance": 1.5077066030838613
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.0037936436190503966
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008002966642379761,
+        "relative_l2_reconstruction_error": 0.0037213259634921057
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003920828952176148
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 3.4153054002672434e-06,
+        "relative_l2_reconstruction_error": 0.010197504487563538
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -1,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.003795661316364251
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.294778823852539e-06,
+        "rmse": 1.019123956904573e-06,
+        "relative_l2_error": 1.6072379825624963e-07,
+        "max_error_over_tolerance": 0.000298715452576028
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.294778823852539e-06,
+        "rmse": 1.019123956904573e-06,
+        "relative_l2_error": 1.6072379825624963e-07,
+        "max_error_over_tolerance": 0.000298715452576028
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 3.9390549176232525e-05,
+        "rmse": 8.9517306322804e-06,
+        "relative_l2_error": 2.4872009152294817e-07,
+        "max_error_over_tolerance": 0.00027616577596390336
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 3.9390549176232525e-05,
+        "rmse": 8.9517306322804e-06,
+        "relative_l2_error": 2.4872009152294817e-07,
+        "max_error_over_tolerance": 0.00027616577596390336
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008002966642379761,
+        "relative_l2_reconstruction_error": 0.0037213259634921057
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.1444091796875e-05,
+        "rmse": 2.6441899553321404e-06,
+        "relative_l2_error": 1.1508167573048747e-07,
+        "max_error_over_tolerance": 0.00031675401867908794
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.1444091796875e-05,
+        "rmse": 2.6441899553321404e-06,
+        "relative_l2_error": 1.1508167573048747e-07,
+        "max_error_over_tolerance": 0.00031675401867908794
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0007371700712610618,
+        "rmse": 0.00010517886022421249,
+        "relative_l2_error": 1.8426795053610367e-07,
+        "max_error_over_tolerance": 0.0003112534487554403
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0007371700712610618,
+        "rmse": 0.00010517886022421249,
+        "relative_l2_error": 1.8426795053610367e-07,
+        "max_error_over_tolerance": 0.0003112534487554403
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003920828952176148
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 6.700354930444519e-06,
+        "rmse": 3.4661118836804412e-06,
+        "relative_l2_error": 3.14564548161988e-08,
+        "max_error_over_tolerance": 0.0005934678214012259
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 6.700354930444519e-06,
+        "rmse": 3.4661118836804412e-06,
+        "relative_l2_error": 3.14564548161988e-08,
+        "max_error_over_tolerance": 0.0005934678214012259
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 7.450580596923828e-09,
+        "rmse": 2.1402696509438375e-09,
+        "relative_l2_error": 3.944482141279825e-08,
+        "max_error_over_tolerance": 0.0002698390765421409
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 7.450580596923828e-09,
+        "rmse": 2.1402696509438375e-09,
+        "relative_l2_error": 3.944482141279825e-08,
+        "max_error_over_tolerance": 0.0002698390765421409
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 6.307917079298453e-10,
+        "rmse": 1.6974698040860646e-10,
+        "relative_l2_error": 9.919983115129528e-08,
+        "max_error_over_tolerance": 1.1830840334056325e-05
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 6.307917079298453e-10,
+        "rmse": 1.6974698040860646e-10,
+        "relative_l2_error": 9.919983115129528e-08,
+        "max_error_over_tolerance": 1.1830840334056325e-05
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 3.4153054002672434e-06,
+        "relative_l2_reconstruction_error": 0.010197504487563538
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -2,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0004215240478515625,
+        "rmse": 0.00013070210014915946,
+        "relative_l2_error": 8.385883703363818e-08,
+        "max_error_over_tolerance": 0.0005655253042118433
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0004215240478515625,
+        "rmse": 0.00013070210014915946,
+        "relative_l2_error": 8.385883703363818e-08,
+        "max_error_over_tolerance": 0.0005655253042118433
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.256670461036265,
+        "rmse": 0.1513279768068268,
+        "relative_l2_error": 1.6494167830970433e-07,
+        "max_error_over_tolerance": 0.00032121138255713973
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.256670461036265,
+        "rmse": 0.1513279768068268,
+        "relative_l2_error": 1.6494167830970433e-07,
+        "max_error_over_tolerance": 0.00032121138255713973
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.003795661316364251
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 0,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 3.0472874641418457e-06,
+        "rmse": 1.1249451508437167e-06,
+        "relative_l2_error": 7.363102746828739e-08,
+        "max_error_over_tolerance": 0.0008361485759777481
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 3.0472874641418457e-06,
+        "rmse": 1.1249451508437167e-06,
+        "relative_l2_error": 7.363102746828739e-08,
+        "max_error_over_tolerance": 0.0008361485759777481
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 5.713748296898302e-05,
+        "rmse": 8.584937961609357e-06,
+        "relative_l2_error": 2.541002776500423e-07,
+        "max_error_over_tolerance": 0.0005854829509934493
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 5.713748296898302e-05,
+        "rmse": 8.584937961609357e-06,
+        "relative_l2_error": 2.541002776500423e-07,
+        "max_error_over_tolerance": 0.0005854829509934493
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0008002966642379761,
+        "relative_l2_reconstruction_error": 0.0037213259634921057
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 1,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.0,
+        "relative_l2_reconstruction_error": 0.0
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 2,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.3828277587890625e-05,
+        "rmse": 4.829631627584519e-06,
+        "relative_l2_error": 3.9069963693162666e-08,
+        "max_error_over_tolerance": 0.0008551072249408863
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.3828277587890625e-05,
+        "rmse": 4.829631627584519e-06,
+        "relative_l2_error": 3.9069963693162666e-08,
+        "max_error_over_tolerance": 0.0008551072249408863
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.006646895490121096,
+        "rmse": 0.0012646750862073243,
+        "relative_l2_error": 7.101895594352767e-08,
+        "max_error_over_tolerance": 0.0006549418835649477
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.006646895490121096,
+        "rmse": 0.0012646750862073243,
+        "relative_l2_error": 7.101895594352767e-08,
+        "max_error_over_tolerance": 0.0006549418835649477
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.00384521484375,
+        "relative_l2_reconstruction_error": 0.003920828952176148
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 3,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 4.76837158203125e-07,
+        "rmse": 3.153981341200579e-07,
+        "relative_l2_error": 3.7255813231701233e-08,
+        "max_error_over_tolerance": 0.0025841861966107776
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 4.76837158203125e-07,
+        "rmse": 3.153981341200579e-07,
+        "relative_l2_error": 3.7255813231701233e-08,
+        "max_error_over_tolerance": 0.0025841861966107776
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.2411326568771983e-05,
+        "rmse": 7.690437910777777e-06,
+        "relative_l2_error": 7.860060523100449e-08,
+        "max_error_over_tolerance": 0.002005382071139511
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.2411326568771983e-05,
+        "rmse": 7.690437910777777e-06,
+        "relative_l2_error": 7.860060523100449e-08,
+        "max_error_over_tolerance": 0.002005382071139511
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 6.103515625e-05,
+        "relative_l2_reconstruction_error": 6.103515625e-05
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 4,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.3283064365386963e-09,
+        "rmse": 9.529004772045243e-10,
+        "relative_l2_error": 3.803031466399856e-08,
+        "max_error_over_tolerance": 9.780416232927538e-05
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 2.3283064365386963e-09,
+        "rmse": 9.529004772045243e-10,
+        "relative_l2_error": 3.803031466399856e-08,
+        "max_error_over_tolerance": 9.780416232927538e-05
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.0005841310665661e-10,
+        "rmse": 3.289229610478434e-11,
+        "relative_l2_error": 9.76062090270671e-08,
+        "max_error_over_tolerance": 1.9589961344215534e-06
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 1.0005841310665661e-10,
+        "rmse": 3.289229610478434e-11,
+        "relative_l2_error": 9.76062090270671e-08,
+        "max_error_over_tolerance": 1.9589961344215534e-06
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 3.4153054002672434e-06,
+        "relative_l2_reconstruction_error": 0.010197504487563538
+      },
+      "negative_controls_detected": 2
+    },
+    {
+      "layer": -3,
+      "n": 128,
+      "k": 512,
+      "activation_scenario": 5,
+      "passed": true,
+      "up_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0003662109375,
+        "rmse": 0.00013082816274159083,
+        "relative_l2_error": 6.737167492415072e-08,
+        "max_error_over_tolerance": 0.0010562954311874265
+      },
+      "gate_dot": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0003662109375,
+        "rmse": 0.00013082816274159083,
+        "relative_l2_error": 6.737167492415072e-08,
+        "max_error_over_tolerance": 0.0010562954311874265
+      },
+      "fused_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 8.895009634634315e-215,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 3.8891549822835165e-217
+      },
+      "fused_vs_unfused": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_cpu": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 8.895009634634315e-215,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 3.8891549822835165e-217
+      },
+      "two_warp_vs_stock": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "two_warp_vs_stock_tight_diagnostic": {
+        "count": 128,
+        "failures": 0,
+        "max_abs_error": 0.0,
+        "rmse": 0.0,
+        "relative_l2_error": 0.0,
+        "max_error_over_tolerance": 0.0
+      },
+      "activation_quantization": {
+        "failures": 0,
+        "max_abs_reconstruction_error": 0.08305931091308594,
+        "relative_l2_reconstruction_error": 0.003795661316364251
+      },
+      "negative_controls_detected": 2
+    }
+  ],
+  "timings": [
+    {
+      "mode": "36_layer_rotation",
+      "path": "prepared_activation",
+      "implementation": "stock_fused",
+      "mean_us": 311.22678650750055,
+      "median_us": 308.91141185054073,
+      "p95_batch_mean_us": 309.67465153446904,
+      "stddev_batch_mean_us": 10.189409271963704,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        354.4652020489728,
+        308.1671043678566,
+        308.37571179425277,
+        308.98253122965497,
+        308.47051408555774,
+        309.07733352095994,
+        308.6696200900608,
+        308.3093431260851,
+        309.21957227918836,
+        308.44208046242045,
+        308.498947708695,
+        309.60828286630135,
+        309.4281443843135,
+        309.58935066505717,
+        309.67465153446904,
+        309.5134805749964,
+        309.65571933322485,
+        308.7644577026367,
+        308.78338990388096,
+        308.8402924714265
+      ]
+    },
+    {
+      "mode": "36_layer_rotation",
+      "path": "prepared_activation",
+      "implementation": "two_warp_fused",
+      "mean_us": 310.37961818553777,
+      "median_us": 309.83585781521265,
+      "p95_batch_mean_us": 310.79348811396846,
+      "stddev_batch_mean_us": 2.3894617224693233,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        320.32235463460285,
+        308.66015398943864,
+        309.57984924316406,
+        309.4850469518591,
+        309.4471119068287,
+        309.70312047887734,
+        309.5040144743743,
+        309.63675181070965,
+        309.7505216245298,
+        309.7505216245298,
+        309.3997107611762,
+        310.16770115605107,
+        310.30993991427954,
+        310.4995444968895,
+        310.5185120194047,
+        310.79348811396846,
+        310.18666867856626,
+        309.9306601065177,
+        310.0254977190936,
+        309.92119400589553
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "prepared_activation",
+      "implementation": "stock_fused",
+      "mean_us": 308.46340744583694,
+      "median_us": 308.4325967011628,
+      "p95_batch_mean_us": 309.07733352095994,
+      "stddev_batch_mean_us": 0.36279413778134595,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        308.61275284378615,
+        308.887693617079,
+        309.07733352095994,
+        308.8592599939417,
+        309.1342360885055,
+        308.8023574263961,
+        308.7359887582284,
+        308.5179152312102,
+        308.35674427173757,
+        308.3283106486003,
+        308.54638417561847,
+        308.45154656304254,
+        308.4136468392831,
+        308.04386845341435,
+        308.1481368453414,
+        308.1955379909939,
+        308.00593340838395,
+        307.95853226273147,
+        308.0628006546586,
+        308.12916932282627
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "prepared_activation",
+      "implementation": "two_warp_fused",
+      "mean_us": 308.982045562179,
+      "median_us": 308.9540799458822,
+      "p95_batch_mean_us": 309.59881676567926,
+      "stddev_batch_mean_us": 0.5066135848607379,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        309.4660794293439,
+        309.54191419813367,
+        309.58935066505717,
+        309.37124181676796,
+        309.69361905698423,
+        309.59881676567926,
+        309.3617757161458,
+        309.4945130524812,
+        309.1437021891276,
+        308.8118588482892,
+        308.9161625614873,
+        308.99199733027706,
+        308.54638417561847,
+        308.59378532127096,
+        308.68858761257593,
+        308.2145055135091,
+        308.66015398943864,
+        308.40414541739005,
+        308.3283106486003,
+        308.2240069354022
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "quantize_plus_operation",
+      "implementation": "stock_fused",
+      "mean_us": 311.9416890320955,
+      "median_us": 311.86962127685547,
+      "p95_batch_mean_us": 312.3579378481264,
+      "stddev_batch_mean_us": 0.24406834896149102,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        312.5191088075991,
+        311.95969051784937,
+        311.80798565899886,
+        312.215699089898,
+        312.3579378481264,
+        312.00712698477287,
+        311.77955203586157,
+        311.6657822220414,
+        311.8459207040292,
+        311.9122893721969,
+        311.8648882265444,
+        311.6468146995262,
+        311.7321508902091,
+        312.15883184362343,
+        311.7131833676939,
+        312.11139537669993,
+        311.87435432716654,
+        312.15883184362343,
+        311.8648882265444,
+        311.63734859890405
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "quantize_plus_operation",
+      "implementation": "two_warp_fused",
+      "mean_us": 312.22613299334495,
+      "median_us": 312.1777817055031,
+      "p95_batch_mean_us": 312.71821481210213,
+      "stddev_batch_mean_us": 0.32384832747573017,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        312.56650995325157,
+        312.3010352805809,
+        312.5570438526295,
+        312.5191088075991,
+        312.71821481210213,
+        312.2536341349284,
+        311.95969051784937,
+        312.1872654667607,
+        312.10192927607784,
+        312.11139537669993,
+        311.7985195583767,
+        312.1682979442455,
+        312.2536341349284,
+        312.00712698477287,
+        311.7416169908312,
+        312.8888871934679,
+        312.11139537669993,
+        311.7985195583767,
+        312.5760113751447,
+        311.9028232715748
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "quantize_plus_operation",
+      "implementation": "unfused_control",
+      "mean_us": 318.76408788892957,
+      "median_us": 318.69628694322375,
+      "p95_batch_mean_us": 319.3078570895725,
+      "stddev_batch_mean_us": 0.5439570397646523,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        318.7958399454753,
+        319.3078570895725,
+        320.66369939733437,
+        318.58726784035014,
+        319.06134993941697,
+        318.7958399454753,
+        318.6441350866247,
+        318.8527425130208,
+        318.3976279364692,
+        318.7484387998228,
+        319.03288099500867,
+        318.9001436586733,
+        318.57776641845703,
+        318.59673394097223,
+        318.3122917457863,
+        318.3028256451642,
+        318.10371964066115,
+        318.9475448043258,
+        318.4165954589844,
+        318.2364569769965
+      ]
+    },
+    {
+      "mode": "36_layer_rotation",
+      "path": "quantize_plus_operation",
+      "implementation": "unfused_control",
+      "mean_us": 320.70447250648783,
+      "median_us": 319.38370951899776,
+      "p95_batch_mean_us": 320.5593956841363,
+      "stddev_batch_mean_us": 5.6557174850430725,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        318.6157014634874,
+        319.15615223072194,
+        320.5593956841363,
+        344.6423565899884,
+        318.86220861364296,
+        319.15615223072194,
+        319.26045594392,
+        319.14665080882884,
+        319.07081604003906,
+        319.01391347249347,
+        318.8811761361581,
+        319.4785294709382,
+        319.72503662109375,
+        319.98104519314234,
+        319.66813405354816,
+        319.9146765249747,
+        319.2888895670573,
+        319.69660299795646,
+        320.1611836751302,
+        319.81037281177663
+      ]
+    },
+    {
+      "mode": "36_layer_rotation",
+      "path": "quantize_plus_operation",
+      "implementation": "stock_fused",
+      "mean_us": 313.0424905706335,
+      "median_us": 312.35318713717993,
+      "p95_batch_mean_us": 314.6998440777814,
+      "stddev_batch_mean_us": 2.215732499961109,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        312.3484364262334,
+        312.07349565294055,
+        312.310501381203,
+        314.6998440777814,
+        312.13986432110823,
+        312.3579378481264,
+        312.5760113751447,
+        312.4906751844618,
+        313.04059205231846,
+        313.0121584291811,
+        322.11437931767216,
+        312.10192927607784,
+        312.15883184362343,
+        313.08799319797095,
+        312.3294689037182,
+        312.1777640448676,
+        312.4906751844618,
+        312.2252005117911,
+        312.7845834802698,
+        312.3294689037182
+      ]
+    },
+    {
+      "mode": "36_layer_rotation",
+      "path": "quantize_plus_operation",
+      "implementation": "two_warp_fused",
+      "mean_us": 316.013511021932,
+      "median_us": 313.2302142955639,
+      "p95_batch_mean_us": 314.0361573961046,
+      "stddev_batch_mean_us": 12.023386004108803,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        313.34400177001953,
+        312.8130524246781,
+        313.04059205231846,
+        313.23969805682145,
+        313.25866557933665,
+        313.097494619864,
+        313.89391863787614,
+        313.22073053430626,
+        313.9602873060438,
+        314.0361573961046,
+        314.0361573961046,
+        367.0660654703776,
+        313.21126443368416,
+        313.5620752970378,
+        312.89835329409,
+        313.62844396520546,
+        313.22073053430626,
+        312.9931909066659,
+        313.1069607204861,
+        312.64238004331236
+      ]
+    },
+    {
+      "mode": "one_pair_reuse",
+      "path": "prepared_activation",
+      "implementation": "unfused_control",
+      "mean_us": 315.4128586804425,
+      "median_us": 315.4346677992079,
+      "p95_batch_mean_us": 316.08415532995156,
+      "stddev_batch_mean_us": 0.5710788072695908,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        316.05568638554325,
+        315.64800827591506,
+        315.72384304470484,
+        315.62904075339986,
+        315.40146580448857,
+        316.08415532995156,
+        315.2402948450159,
+        315.64800827591506,
+        315.6574743765372,
+        315.4109672263817,
+        316.7099422878689,
+        315.45836837203416,
+        315.14549255371094,
+        315.07912388554325,
+        314.7757141678422,
+        314.6334754096137,
+        314.6714104546441,
+        314.5955403645833,
+        316.00828523989077,
+        314.6808765552662
+      ]
+    },
+    {
+      "mode": "36_layer_rotation",
+      "path": "prepared_activation",
+      "implementation": "unfused_control",
+      "mean_us": 315.08243172257033,
+      "median_us": 314.9937700342249,
+      "p95_batch_mean_us": 315.68594332094546,
+      "stddev_batch_mean_us": 0.3245437133833946,
+      "warmup_calls": 200,
+      "calls_per_sample": 108,
+      "samples_us": [
+        314.91791760479964,
+        315.12652503119574,
+        315.2023597999855,
+        314.7851802684643,
+        315.2118612218786,
+        315.09809140805845,
+        316.1031228524667,
+        315.68594332094546,
+        314.9463865492079,
+        315.02222131799766,
+        315.0032537954825,
+        314.83258141411676,
+        314.9842862729673,
+        315.10755750868054,
+        314.82311531349467,
+        314.93688512731484,
+        314.756746645327,
+        314.87051645914715,
+        314.88948398166235,
+        315.344598558214
+      ]
+    }
+  ],
+  "device": {
+    "name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "l2_bytes": 25165824,
+    "compute_major": 8,
+    "compute_minor": 9
+  },
+  "cuda_runtime_version": 13000,
+  "cuda_driver_version": 13000,
+  "tolerances": {
+    "dot_absolute_floor": 2e-05,
+    "dot_l1_factor": 2e-05,
+    "output_relative_floor": 5e-05,
+    "output_absolute_floor": 5e-05,
+    "silu_derivative_bound": 1.1,
+    "candidate_stock_cpu_bound_multiplier": 2
+  },
+  "all_correctness_passed": true,
+  "timing_order_seed": 42,
+  "device_weight_working_set_bytes": 2038431744,
+  "fused_sample_order": "Stock first on even trials, two warps first on odd trials",
+  "status": "passed"
+}

@@ -25,3 +25,7 @@ Traced packed Q4_K weights, temporary Q8_1 activations and existing fusion. Iden
 Added a project-owned harness that compiles exact stock kernel excerpts outside the source checkout, reads real weights directly from verified GGUF offsets, and compares fused outputs with a scalar-decoding CPU reference and an unfused GPU control. The harness gates CUDA-event timing on correctness. Timing covers prepared activations and quantization plus operation, with one-pair reuse and rotation through all 36 layer pairs. See [the harness guide](q4-k-benchmark.md) for design and the latest run interpretation.
 
 Validation passed 36/36 cases with 72/72 checker negative detections. A follow-up run added independent activation-quantization checks, with zero violations. Stock fused execution was about 309 us, while the unfused control was about 315 us; fusion was already present in production, so this is a harness baseline rather than an original speedup. Raw successful runs, metadata and a generated summary are retained in `results/`. No runtime changes were integrated.
+
+## 2026-11-21 Two warps per block
+
+The isolated candidate switched the fused operation from 128 to 64 threads per block while keeping one output row per block. Both timed runs passed 36/36 cases against the CPU reference. The prepared-activation latency changed by -0.27% and +0.61% in the layer rotation. With quantization included the candidate was slower in both runs, by 0.95% and 0.27%. See the [exact diff command, tolerances and raw runs](q4-k-benchmark.md#two-warp-experiment).

@@ -101,6 +101,28 @@ The subsequent run `q4-microbench-20261120T165630Z.json` added the independent a
 
 Stock fused prepared-activation timing was about 309 us for both access modes. This agrees closely with the earlier approximately 308 us model-profile observation, providing a practical baseline for the selected operation. The unfused control was about 315 us. This does not represent a new optimization: the production runtime already uses fusion. See [the generated summary](../results/q4-microbench-summary.md) for all eight timing rows and variability.
 
-## Next implementation step
+## Two-warp experiment
 
-Add a separately named candidate alongside the unchanged stock path. Begin with a single thread-mapping or reduction hypothesis, keep input bytes and fusion identical, and run the correctness gate first. Compare against stock fused timing in both weight-access modes. Only a repeatable improvement should move into an experimental inference build, followed by full-model speed and quality checks. Never infer model tokens/sec improvement from the unfused-control comparison alone.
+The harness now benchmarks a separately named, fused two-warp variant alongside the stock four-warp kernel. The generator creates the variant from the pinned stock kernel body by changing its symbol name, its launch bound and its compile-time warp count. The harness supplies the matching block dimensions, `(32, 2, 1)`. Both variants process one output row per block with the same weight and activation formats and the same fused operation.
+
+After building, open the exact device-code diff with:
+
+```powershell
+$build = Join-Path $env:LOCALAPPDATA 'LLMOptimization\build\q4-microbench'
+code --diff (Join-Path $build 'stock_mmvq_kernel.cuh') (Join-Path $build 'two_warp_mmvq.cuh')
+```
+
+The original 36 cases now check both fused variants against the same CPU reference and per-row tolerance. The direct cross-check uses twice that tolerance because each variant has its own rounding error. The original, tighter stock-relative comparison is still recorded as a diagnostic. Its initial run flagged three values in the large-activation case for layer 35 even though both versions passed the CPU checks for all 36 cases.
+
+The comparison warms up both kernels, then alternates which one runs first in each of 20 pairs of samples. Both samples in a pair use the same starting layer. Each sample contains 108 calls, exactly three full rotations when using all 36 layers. The unfused control is timed separately.
+
+Both timed runs passed all 36 correctness cases. The rotating-layer comparison gave the following mean microseconds per call.
+
+| Run | Work included | Four warps | Two warps |
+| --- | --- | ---: | ---: |
+| [First run](../results/q4-microbench-20261121T173118Z.json) | Prepared activation | 311.23 | 310.38 |
+| First run | Activation quantization + fused operation | 313.04 | 316.01 |
+| [Repeat](../results/q4-microbench-20261121T173140Z.json) | Prepared activation | 312.30 | 314.21 |
+| Repeat | Activation quantization + fused operation | 311.53 | 312.37 |
+
+The small gain with prepared activations in the first run reversed on repeat. Including quantization, two warps were slower in both runs. The experiment stays in the isolated harness. The [initial correctness report](../results/q4-microbench-20261121T173006Z.json) preserves the three tighter diagnostic disagreements.
