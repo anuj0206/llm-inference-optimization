@@ -1,0 +1,11 @@
+{
+  "gpu_after": "NVIDIA GeForce RTX 4050 Laptop GPU, 582.05, 55, 2640 MHz, 8001 MHz, 48.48 W",
+  "battery_status": 2,
+  "source_sha256": "2e2130e50d60c8aa4f37815fa68aa67117813629e56222bc161242b6260fae51",
+  "gpu_before": "NVIDIA GeForce RTX 4050 Laptop GPU, 582.05, 49, 2055 MHz, 7001 MHz, 11.05 W",
+  "gpu_snapshot_fields": "name,driver_version,temperature.gpu,clocks.sm,clocks.mem,power.draw",
+  "executable_sha256": "723bc2487a2cdee17bfa141d425fa57fb18da71c2fbf5b59a64ae7e0250a3d1d",
+  "power_state": "AC",
+  "finished_at_utc": "2026-11-21T19:11:08.8396799Z",
+  "started_at_utc": "2026-11-21T19:10:58.8079660Z"
+}

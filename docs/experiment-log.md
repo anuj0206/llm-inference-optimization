@@ -37,3 +37,7 @@ Both three-way runs passed 36/36 cases. One warp was about 1% slower in the prep
 ## 2026-11-21 Two output rows per block
 
 Keeping four warps per block and processing two rows halved the grid size. Both runs passed 36/36 cases and matched stock on all checked outputs. The candidate added 0.22–0.23% latency with prepared activations in the layer rotation and 0.15–0.16% with activation quantization included. The higher register count lowered calculated residency from 36 to 32 warps per SM. The [harness guide](q4-k-benchmark.md#two-rows-per-block) records both raw runs and the exact diff command.
+
+## 2026-11-21 Streaming-read bandwidth
+
+Advanced Threat Defense blocked both Nsight Compute attempts. A CUDA-event benchmark ran without elevation and measured approximately 187.5–187.7 GB/s for 256 and 512 MiB input buffers in both size orders. The stock Q4_K kernel's nominal weight throughput was about 183.4 GB/s. See the [streaming-read results](rtx4050-tuning.md#streaming-read-bandwidth) for the method, raw data and limits of the comparison.
