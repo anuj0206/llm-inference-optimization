@@ -360,3 +360,25 @@ python .\scripts\benchmark-ttft.py --profile --kv q8_0 --cublas
 Forced cuBLAS increased median time to first token by 1.52 s (27.8%) and peak sampled VRAM by 124 MiB. The 12 requests finished on AC with all 37 layers on the GPU. Each session peaked at 70 °C, and every request returned the same first token. The 5.469 s stock figure comes from this paired run. The earlier microbatch sweep measured 6.048 s with the same stock settings. [Raw paired timings](../results/ttft-cublas-8k-20261122T040755Z.json)
 
 One 8K trace per arm confirmed the dispatch. The stock quantized matmul kernels and activation packing took 4.503 s. With cuBLAS, GEMMs took 3.566 s, Q4_K and Q6_K weight unpacking to FP16 took 1.524 s, and the separate FP32-to-FP16 and FP16-to-FP32 activation casts took 0.565 s. A separate gated SiLU kernel took 0.257 s in the cuBLAS trace. The GEMMs finished faster in isolation, while the surrounding work increased total prefill latency. Flash Attention took 0.985 s on stock and 1.047 s with cuBLAS. The experiment selects stock quantized matmul at batch and microbatch 512 as the TTFT reference. [Stock trace summary](../results/prefill-profile-8k-20261122T040949Z.json) · [cuBLAS trace summary](../results/prefill-profile-8k-cublas-20261122T041022Z.json)
+
+## 2026-11-21 Fused Q4_K prefill tile width
+
+The original 8K trace at microbatch 512 spent 2.19 s in the fused Q4_K gate/up/SwiGLU matmul across 560 launches. The experiment compares its existing 32-, 64-, and 128-token-column kernel templates. The variant DLL changes the tile selector for dense, fused Q4_K on Ada with 4,096 input features, 12,288 output features, and 512 token columns. It uses the stock output row tile and eight warps per CUDA block. The build relinks a replacement `mmq.cu` object against the pinned stock CUDA objects.
+
+The isolated harness loads actual Q4_K gate and up weights for eight Qwen3 8B layers and uses seeded synthetic activations. It packs the activations once outside the timed region. Before timing, it checks every output value against the 128-column kernel. Each of the 18 timing passes rotates the order of variants, and each sample reports GPU event time per launch across the eight weight pairs.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\build-prefill-mmq.py
+$harness = Join-Path $env:LLM_OPT_ROOT 'build\llama-prefill-mmq\bin\prefill-mmq-bench.exe'
+$model = Join-Path $env:LLM_OPT_ROOT 'models\Qwen3-8B-Q4_K_M.gguf'
+& $harness $model (Join-Path $env:LLM_OPT_ROOT 'prefill-mmq-isolated.json')
+```
+
+| Token columns per block | Median time per launch | Sample range | Time increase versus 128 |
+| ---: | ---: | ---: | ---: |
+| 128 | 3.805 ms | 3.722–4.024 ms | — |
+| 64 | 4.316 ms | 4.226–4.567 ms | 13.4% |
+| 32 | 5.906 ms | 5.813–6.199 ms | 55.2% |
+
+Both narrower tiles matched all 50,331,648 reference output values across the eight weight pairs. The timing ranges separate all three widths, with width 128 fastest. Narrowing the tile gives each block fewer token columns over which to reuse its weight tile. The full-model timing was stopped after the isolated result made the tile choice clear. [Isolated measurements](../results/prefill-mmq-isolated-20261122T042247Z.json)
