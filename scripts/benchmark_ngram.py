@@ -91,14 +91,14 @@ def draft_counters(base):
     return {name: int(float(samples[key])) for name, key in DRAFT_METRICS.items()}
 
 
-def completion(base, tokens):
+def completion(base, tokens, *, prompt_length=PROMPT_TOKENS):
     before = draft_counters(base)
     response = request(base, "/completion", {
         "prompt": tokens, "n_predict": OUTPUT_TOKENS, "temperature": 0, "seed": 42,
         "cache_prompt": False, "ignore_eos": True, "stream": False, "return_tokens": True,
     })
     timing = response["timings"]
-    if (timing["prompt_n"] != PROMPT_TOKENS or timing["predicted_n"] != OUTPUT_TOKENS
+    if (timing["prompt_n"] != prompt_length or timing["predicted_n"] != OUTPUT_TOKENS
             or len(response["tokens"]) != OUTPUT_TOKENS or response.get("truncated")):
         raise RuntimeError(f"Unexpected workload lengths: {timing}")
     after = draft_counters(base)
@@ -108,8 +108,8 @@ def completion(base, tokens):
     }
 
 
-def server_args(executable, model, mode):
-    return [str(executable), "-m", str(model), "-ngl", "99", "-c", str(CONTEXT_CAPACITY),
+def server_args(executable, model, mode, *, context_capacity=CONTEXT_CAPACITY):
+    return [str(executable), "-m", str(model), "-ngl", "99", "-c", str(context_capacity),
             "-np", "1", "-b", "512", "-ub", "128", "-t", "8", "-fa", "on",
             "-ctk", "f16", "-ctv", "f16", "--fit", "off", "--metrics", "-lv", "4", "--spec-type", mode]
 

@@ -184,3 +184,34 @@ python .\scripts\diagnose-ngram-parity.py .\results\ngram-prose-8k-20261121T2300
 | Fiction opening | 28.98 | 28.16 | 28.27 | 141 → 52 |
 
 All 30 requests completed with 37/37 layers offloaded and a sampled 5,785 MiB peak in each session. The figures average the two passes. Feedback stayed at the initial cap on Python. Both fiction runs dropped the cap from eight to two to zero, then recovered or paused again based on probe results. The memo and rewrite lost 1.9% and 3.7% versus ranked while matching stock tokens in both runs. Freeform and fiction still diverged from stock. Freeform first changed at token 21 in both speculative policies. Fiction first changed at token 73 in ranked and 44 with feedback. The timings for divergent sequences measure throughput on different outputs. [Paired benchmark and budget decisions](../results/ngram-budget-8k-20261121T233006Z.json)
+
+## 2026-11-21 FP16 long-context attention dispatch
+
+The alternate CUDA DLL changes dispatch for one-query, one-sequence FP16 attention with head dimension 128, GQA ratio four, an eligible mask and at least 4,096 KV rows. It selects the pinned runtime's existing grouped Tensor Core implementation in place of the vector path. Other attention shapes use the pinned dispatcher. Both choices in the comparison run through the same rebuilt DLL.
+
+The isolated harness creates Qwen3-shaped tensors with 32 query heads and eight KV heads. The storage is FP16 for K and V, with the heads interleaved within each token row as in the model cache. Each call computes a dense attention result on a fixed seeded input and scale. The harness checks both paths against a double-precision CPU reference before timing. Eight separate KV pairs model cache turnover across layers. Repeating the same pair measures a more cache-resident case. CUDA events bracket all kernels issued by the attention operation, including any partial reduction. The two timing passes reverse depth and dispatch order.
+
+CUPTI uses the toolkit's Range Profiler in the same executable. Every replay restores one of the two cache states with seven lead-in calls outside the measured range. Counters cover the complete target attention call, including reduction where applicable. The GPU driver denied performance-counter access in the regular-user probe.
+
+```powershell
+.\scripts\build-attention-bench.ps1
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-attention.py isolated
+python .\scripts\benchmark-attention.py decode
+# On this laptop, use the project paths from an elevated PowerShell for counters.
+$env:PATH = (Join-Path $env:CUDA_PATH 'lib\x64') + ';' + $env:PATH
+python .\scripts\benchmark-attention.py counters
+```
+
+| Populated KV depth | Rotated vector µs | Rotated grouped µs | Same-layer vector µs | Same-layer grouped µs | Full-model vector tok/s | Full-model grouped tok/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4,096 | 110.72 | 108.65 | 85.08 | 29.67 | 32.16 | 32.39 |
+| 8,192 | 225.62 | 215.75 | 206.95 | 191.50 | 28.96 | 29.06 |
+
+The isolated numbers average four session medians per shape and path. The 4K rotated advantage changed sign with order. At 8K every grouped session was faster than every vector session, with a 4.4% reduction in mean latency. Both paths passed all CPU comparisons. The largest grouped absolute error was 0.0000731. [First isolated run](../results/attention-isolated-20261121T235507Z.json) · [Isolated repeat](../results/attention-isolated-20261122T000057Z.json)
+
+The full-model run used the same 8B weights, FP16 KV, CUDA graph settings, 128 generated greedy tokens and no speculative decoding. It ran two archived prompts twice per depth and path on AC, reversing order in the second pass. All sessions offloaded 37/37 layers. The sampled peak matched across paths at each depth, 5,207 MiB at 4K and 5,785 MiB at 8K. Both prompts matched stock token IDs at 8K. At 4K, the memo diverged at token 108 in both grouped runs. The full-model speed increases were 0.71% at 4K and 0.34% at 8K. [Full-model comparison](../results/attention-decode-20261121T235744Z.json)
+
+At 8K, one layer holds 32 MiB of unique FP16 K and V. Streaming that amount once at the measured 188 GB/s streaming-read reference would take about 179 µs, compared with 216 µs for grouped attention. This scenario suggests room for a focused kernel experiment. It assumes a single read at the streaming rate and omits attention arithmetic, so it neither quantifies actual DRAM traffic nor predicts a wall-clock gain. A grouped Q8_0 variant could also test whether smaller reads translate into speed at this workload.
+
+The elevated launch was canceled before the counter worker ran. This comparison has timings and numerical checks, with DRAM bytes and L2 sector counts pending an elevated CUPTI run. The regular-user failure was the NVIDIA driver permission error `CUPTI_ERROR_INSUFFICIENT_PRIVILEGES`.
