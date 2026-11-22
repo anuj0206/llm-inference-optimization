@@ -421,7 +421,7 @@ The 12 requests completed on AC with all 37 layers offloaded and the same first 
 
 ### Selected fresh 8K TTFT configuration
 
-Use logical batch 4,096 and microbatch 1,024 (`-b 4096 -ub 1024`) for fresh 8K Q8_0 TTFT comparisons. Median TTFT fell from 7.181 s in the first stock run at 512/128 to 5.451 s at 4,096/1,024, a reduction of 1.730 s (24.1%). Both used the same prompt, model, Q8_0 K/V cache, and stock CUDA binaries. This compares separate benchmark sessions and includes changes to both batch sizes. [Original streaming baseline](../results/ttft-20261122T034508Z.json) · [Selected configuration](../results/ttft-microbatch-compare-8k-20261122T180050Z.json)
+Use stock integer MMQ for prefill with logical batch 4,096 and microbatch 1,024 (`-b 4096 -ub 1024`) for fresh 8K Q8_0 TTFT comparisons. Median TTFT fell from 7.181 s in the first stock run at 512/128 to 5.451 s at 4,096/1,024, a reduction of 1.730 s (24.1%). Both used the same prompt, model, Q8_0 K/V cache, and stock CUDA binaries. This compares separate benchmark sessions and includes changes to both batch sizes. [Original streaming baseline](../results/ttft-20261122T034508Z.json) · [Selected configuration](../results/ttft-microbatch-compare-8k-20261122T180050Z.json) · [FP8 comparison](#2026-11-22-fp8-gateup-prefill-versus-stock-integer-mmq)
 
 ## 2026-11-22 FP8 gate/up prefill versus stock integer MMQ
 
