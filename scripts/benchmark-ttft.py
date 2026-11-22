@@ -131,40 +131,50 @@ def sweep_microbatch(dataset, result, root, archived, options):
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     tokens = archived["prose_summary"]
     kv = options.kv or "q8_0"
-    dataset.update({"prompt_tokens": len(tokens), "batch": 512, "microbatches": MICROBATCH_SIZES,
-                    "warmup_prompt_tokens": 2048, "measured_requests_per_session": 2})
+    if options.sweep_large_microbatch:
+        # A common multiple of all three widths avoids short GPU chunks at logical-batch boundaries.
+        configurations = ((512, 512), (3072, 512), (3072, 768), (3072, 1024))
+        orders = (configurations, configurations[::-1])
+        dataset["batch_configurations"] = [{"batch": batch, "microbatch": microbatch}
+                                            for batch, microbatch in configurations]
+    else:
+        configurations = tuple((512, microbatch) for microbatch in MICROBATCH_SIZES)
+        orders = tuple(configurations[i:] + configurations[:i] for i in range(len(configurations)))
+        dataset.update(batch=512, microbatches=MICROBATCH_SIZES)
+    dataset.update(prompt_tokens=len(tokens), warmup_prompt_tokens=2048, measured_requests_per_session=2)
     dataset["prompt"] = "Archived 8,192-token project memo; each request processes the entire prompt."
     dataset.pop("reused_prefix")
 
-    for block in range(len(MICROBATCH_SIZES)):
-        order = MICROBATCH_SIZES[block:] + MICROBATCH_SIZES[:block]
-        for microbatch in order:
-            args = server_args(executable, model, "none", cache_type=kv, microbatch=microbatch)
-            session = {"kv_type": kv, "block": block + 1, "microbatch": microbatch, "measurements": []}
+    for block, order in enumerate(orders, start=1):
+        for batch, microbatch in order:
+            args = server_args(executable, model, "none", cache_type=kv, batch=batch, microbatch=microbatch)
+            session = {"kv_type": kv, "block": block, "batch": batch, "microbatch": microbatch, "measurements": []}
             dataset["sessions"].append(session)
-            log = result.with_name(f"{result.stem}-{block + 1}-{microbatch}.log")
+            log = result.with_name(f"{result.stem}-{block}-{batch}-{microbatch}.log")
             with measured_server(args, log, None, session) as base:
-                first_token(base, tokens[:2048])
+                first_token(base, tokens[:dataset["warmup_prompt_tokens"]])
                 for _ in range(dataset["measured_requests_per_session"]):
                     session["measurements"].append(first_token(base, tokens))
 
             log_text = log.read_text(encoding="utf-8", errors="replace")
-            if not re.search(rf"\bn_ubatch\s*=\s*{microbatch}\b", log_text):
-                raise RuntimeError(f"Effective microbatch {microbatch} not confirmed: inspect {log}")
+            if (not re.search(rf"\bn_batch\s*=\s*{batch}\b", log_text)
+                    or not re.search(rf"\bn_ubatch\s*=\s*{microbatch}\b", log_text)):
+                raise RuntimeError(f"Effective batch/microbatch {batch}/{microbatch} not confirmed: inspect {log}")
             compute_buffer = re.search(r"\bCUDA0 compute buffer size\s*=\s*([\d.]+) MiB", log_text)
             if compute_buffer:
                 session["cuda_compute_buffer_mib"] = float(compute_buffer[1])
             timings = [row["ttft_ms"] for row in session["measurements"]]
-            print(f"Block {block + 1}, {kv} microbatch {microbatch}: "
+            print(f"Block {block}, {kv} batch/microbatch {batch}/{microbatch}: "
                   f"median {median(timings):.1f} ms, peak {session['sampled_peak_vram_mib']} MiB", flush=True)
 
     summary = []
-    for microbatch in MICROBATCH_SIZES:
-        sessions = [session for session in dataset["sessions"] if session["microbatch"] == microbatch]
+    for batch, microbatch in configurations:
+        sessions = [session for session in dataset["sessions"]
+                    if (session["batch"], session["microbatch"]) == (batch, microbatch)]
         rows = [row for session in sessions for row in session["measurements"]]
         ttft = [row["ttft_ms"] for row in rows]
         summary.append({
-            "microbatch": microbatch, "repetitions": len(rows), "median_ttft_ms": median(ttft),
+            "batch": batch, "microbatch": microbatch, "repetitions": len(rows), "median_ttft_ms": median(ttft),
             "min_ttft_ms": min(ttft), "max_ttft_ms": max(ttft),
             "median_server_prompt_ms": median(row["server_timings"]["prompt_ms"] for row in rows),
             "median_server_prompt_tokens_per_second": median(
@@ -283,6 +293,8 @@ def main():
     group.add_argument("--depth", type=int, choices=DEPTHS)
     group.add_argument("--profile", action="store_true", help="Trace a fresh 8K request in Nsight Systems.")
     group.add_argument("--sweep-microbatch", action="store_true", help="Sweep 128, 256, and 512 at fresh 8K.")
+    group.add_argument("--sweep-large-microbatch", action="store_true",
+                       help="Sweep 512, 768, and 1024 at fresh 8K with a matched control.")
     group.add_argument("--compare-cublas", action="store_true", help="Compare stock and forced cuBLAS at fresh 8K.")
     options = parser.parse_args()
     if options.cublas and not options.profile:
@@ -298,6 +310,8 @@ def main():
         run = profile
     elif options.sweep_microbatch:
         label, run = "ttft-microbatch-8k", sweep_microbatch
+    elif options.sweep_large_microbatch:
+        label, run = "ttft-large-microbatch-8k", sweep_microbatch
     elif options.compare_cublas:
         label, run = "ttft-cublas-8k", compare_cublas
     result = PROJECT / "results" / f"{label}-{stamp}.json"

@@ -382,3 +382,23 @@ $model = Join-Path $env:LLM_OPT_ROOT 'models\Qwen3-8B-Q4_K_M.gguf'
 | 32 | 5.906 ms | 5.813–6.199 ms | 55.2% |
 
 Both narrower tiles matched all 50,331,648 reference output values across the eight weight pairs. The timing ranges separate all three widths, with width 128 fastest. Narrowing the tile gives each block fewer token columns over which to reuse its weight tile. The full-model timing was stopped after the isolated result made the tile choice clear. [Isolated measurements](../results/prefill-mmq-isolated-20261122T042247Z.json)
+
+## 2026-11-22 Larger prefill microbatches at 8K
+
+The comparison runs microbatches of 512, 768, and 1,024 at a fixed logical batch of 3,072. This batch is divisible by every tested microbatch width, leaving only the final 512-token tail at width 768. The existing 512/512 setting serves as a control for the logical-batch change.
+
+The stock runtime processes the archived fresh 8,192-token memo with Qwen3 8B Q4_K_M, Q8_0 K and V, an 8,448-token context capacity, and Flash Attention. Each session warms up on 2,048 tokens and measures two 8K requests. The return pass reverses configuration order. The harness records the first streamed token and verifies zero cached input tokens, full CUDA layer offload, and effective batch sizes.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-ttft.py --sweep-large-microbatch
+```
+
+| Batch / microbatch | Median TTFT | TTFT range | Median prefill speed | Sampled peak VRAM |
+| --- | ---: | ---: | ---: | ---: |
+| 512 / 512 (control) | 5.921 s | 5.590–6.112 s | 1,386 tok/s | 5,324 MiB |
+| 3,072 / 512 | 5.811 s | 5.592–6.077 s | 1,413 tok/s | 5,324 MiB |
+| 3,072 / 768 | 5.703 s | 5.452–5.940 s | 1,440 tok/s | 5,384 MiB |
+| 3,072 / 1,024 | 5.676 s | 5.451–5.883 s | 1,447 tok/s | 5,454 MiB |
+
+All 16 requests completed on AC with 37/37 GPU layers and the same first token. Session temperature peaks ranged from 63 to 74 °C. At a logical batch of 3,072, both larger microbatches beat 512 in each pass. Width 768 saved 109 ms in the overall median for 60 MiB more sampled VRAM. Width 1,024 saved another 27 ms for 70 MiB more, with overlapping timing ranges and a different ordering between the two passes. For this 8K prompt, 768 offers nearly all the measured latency gain. [Raw timings and session telemetry](../results/ttft-large-microbatch-8k-20261122T175409Z.json)

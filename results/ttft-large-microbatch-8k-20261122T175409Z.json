@@ -1,0 +1,804 @@
+{
+  "status": "passed",
+  "fixture": "ngram-prose-8k-20261121T230013Z.json",
+  "context_capacity": 8448,
+  "prompt": "Archived 8,192-token project memo; each request processes the entire prompt.",
+  "ttft_definition": "Elapsed wall time from opening the loopback HTTP request to the first streamed token event.",
+  "model_manifest": {
+    "repository": "Qwen/Qwen3-8B-GGUF",
+    "revision": "7c41481f57cb95916b40956ab2f0b139b296d974",
+    "filename": "Qwen3-8B-Q4_K_M.gguf",
+    "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+    "size_bytes": 5027783488,
+    "license": "Apache-2.0"
+  },
+  "source_revision": "8bf88ba9368e70fe3ba1b0001b34e70ffc713716",
+  "server_sha256": "a203cde62e4624cefc18a898e70c23363e3156a9ffcaf2d466f581d0fd0c05c0",
+  "cuda_dll_sha256": "fecc0a2822e2ff9f6078d05a7bad77554174007d28b7600b6fd7c2a66d33e49c",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, 582.05, 6141 MiB",
+  "sessions": [
+    {
+      "kv_type": "q8_0",
+      "block": 1,
+      "batch": 512,
+      "microbatch": 512,
+      "measurements": [
+        {
+          "ttft_ms": 6078.5072,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 6073.221,
+            "prompt_per_token_ms": 0.7413599853515624,
+            "prompt_per_second": 1348.8723693736817,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370054418546900,
+          "first_token_utc_ns": 1795370060497054100
+        },
+        {
+          "ttft_ms": 5589.693,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5582.364,
+            "prompt_per_token_ms": 0.68144091796875,
+            "prompt_per_second": 1467.478652413207,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370060500172000,
+          "first_token_utc_ns": 1795370066089865000
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "512",
+        "-ub",
+        "512",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "63691",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5324,
+      "sampled_max_gpu_temperature_c": 63,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 112.26
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 1,
+      "batch": 3072,
+      "microbatch": 512,
+      "measurements": [
+        {
+          "ttft_ms": 6017.8074,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 6012.699,
+            "prompt_per_token_ms": 0.7339720458984375,
+            "prompt_per_second": 1362.4497085252397,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370071407629300,
+          "first_token_utc_ns": 1795370077425436700
+        },
+        {
+          "ttft_ms": 5592.3428,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5585.201,
+            "prompt_per_token_ms": 0.6817872314453125,
+            "prompt_per_second": 1466.7332473799959,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370077428590000,
+          "first_token_utc_ns": 1795370083020932800
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "512",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "54969",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5324,
+      "sampled_max_gpu_temperature_c": 66,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 112.26
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 1,
+      "batch": 3072,
+      "microbatch": 768,
+      "measurements": [
+        {
+          "ttft_ms": 5889.2975,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5884.044,
+            "prompt_per_token_ms": 0.71826708984375,
+            "prompt_per_second": 1392.2397589141074,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370088370252600,
+          "first_token_utc_ns": 1795370094259550100
+        },
+        {
+          "ttft_ms": 5452.348,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5445.968,
+            "prompt_per_token_ms": 0.664791015625,
+            "prompt_per_second": 1504.2321218192983,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370094262330100,
+          "first_token_utc_ns": 1795370099714678100
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "768",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "54993",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5384,
+      "sampled_max_gpu_temperature_c": 69,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 168.4
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 1,
+      "batch": 3072,
+      "microbatch": 1024,
+      "measurements": [
+        {
+          "ttft_ms": 5871.8303,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5865.151,
+            "prompt_per_token_ms": 0.7159608154296875,
+            "prompt_per_second": 1396.724483308273,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370105088835500,
+          "first_token_utc_ns": 1795370110960665800
+        },
+        {
+          "ttft_ms": 5479.5501,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5473.037,
+            "prompt_per_token_ms": 0.6680953369140625,
+            "prompt_per_second": 1496.7923659204203,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370110963516400,
+          "first_token_utc_ns": 1795370116443066500
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "1024",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55013",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5454,
+      "sampled_max_gpu_temperature_c": 70,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 224.53
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 2,
+      "batch": 3072,
+      "microbatch": 1024,
+      "measurements": [
+        {
+          "ttft_ms": 5882.7969,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5877.438,
+            "prompt_per_token_ms": 0.717460693359375,
+            "prompt_per_second": 1393.8045794783372,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370121746370200,
+          "first_token_utc_ns": 1795370127629167100
+        },
+        {
+          "ttft_ms": 5450.9508,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5444.094,
+            "prompt_per_token_ms": 0.664562255859375,
+            "prompt_per_second": 1504.7499179845167,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370127632133800,
+          "first_token_utc_ns": 1795370133083084600
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "1024",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55036",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5442,
+      "sampled_max_gpu_temperature_c": 71,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 224.53
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 2,
+      "batch": 3072,
+      "microbatch": 768,
+      "measurements": [
+        {
+          "ttft_ms": 5940.1189,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5934.928,
+            "prompt_per_token_ms": 0.724478515625,
+            "prompt_per_second": 1380.303181437079,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370138492857900,
+          "first_token_utc_ns": 1795370144432976800
+        },
+        {
+          "ttft_ms": 5515.9909,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5508.695,
+            "prompt_per_token_ms": 0.6724481201171875,
+            "prompt_per_second": 1487.1035699017646,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370144435903200,
+          "first_token_utc_ns": 1795370149951894100
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "768",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55055",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5384,
+      "sampled_max_gpu_temperature_c": 73,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 168.4
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 2,
+      "batch": 3072,
+      "microbatch": 512,
+      "measurements": [
+        {
+          "ttft_ms": 6076.7013,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 6055.743,
+            "prompt_per_token_ms": 0.7392264404296875,
+            "prompt_per_second": 1352.7654657735638,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370155360297800,
+          "first_token_utc_ns": 1795370161436999100
+        },
+        {
+          "ttft_ms": 5604.5827,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5598.441,
+            "prompt_per_token_ms": 0.6834034423828125,
+            "prompt_per_second": 1463.2645052435134,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370161439797500,
+          "first_token_utc_ns": 1795370167044380200
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "3072",
+        "-ub",
+        "512",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55075",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5324,
+      "sampled_max_gpu_temperature_c": 73,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 112.26
+    },
+    {
+      "kv_type": "q8_0",
+      "block": 2,
+      "batch": 512,
+      "microbatch": 512,
+      "measurements": [
+        {
+          "ttft_ms": 6112.0021,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 6107.021,
+            "prompt_per_token_ms": 0.7454859619140625,
+            "prompt_per_second": 1341.4068823408336,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370172420606500,
+          "first_token_utc_ns": 1795370178532608600
+        },
+        {
+          "ttft_ms": 5764.0183,
+          "server_timings": {
+            "cache_n": 0,
+            "prompt_n": 8192,
+            "prompt_ms": 5757.049,
+            "prompt_per_token_ms": 0.7027647705078125,
+            "prompt_per_second": 1422.9512376913935,
+            "predicted_n": 1,
+            "predicted_ms": 0.001,
+            "predicted_per_token_ms": 0.0,
+            "predicted_per_second": 0.0
+          },
+          "first_token": 334,
+          "first_content": "**",
+          "request_started_utc_ns": 1795370178535519600,
+          "first_token_utc_ns": 1795370184299537900
+        }
+      ],
+      "command": [
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "512",
+        "-ub",
+        "512",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55095",
+        "--no-webui"
+      ],
+      "sampled_peak_vram_mib": 5324,
+      "sampled_max_gpu_temperature_c": 74,
+      "offloaded_layers": [
+        [
+          "37",
+          "37"
+        ]
+      ],
+      "cuda_compute_buffer_mib": 112.26
+    }
+  ],
+  "batch_configurations": [
+    {
+      "batch": 512,
+      "microbatch": 512
+    },
+    {
+      "batch": 3072,
+      "microbatch": 512
+    },
+    {
+      "batch": 3072,
+      "microbatch": 768
+    },
+    {
+      "batch": 3072,
+      "microbatch": 1024
+    }
+  ],
+  "prompt_tokens": 8192,
+  "warmup_prompt_tokens": 2048,
+  "measured_requests_per_session": 2,
+  "summary": [
+    {
+      "batch": 512,
+      "microbatch": 512,
+      "repetitions": 4,
+      "median_ttft_ms": 5921.26275,
+      "min_ttft_ms": 5589.693,
+      "max_ttft_ms": 6112.0021,
+      "median_server_prompt_ms": 5915.135,
+      "median_server_prompt_tokens_per_second": 1385.9118035325378,
+      "sampled_peak_vram_mib": 5324,
+      "first_token_ids": [
+        334
+      ]
+    },
+    {
+      "batch": 3072,
+      "microbatch": 512,
+      "repetitions": 4,
+      "median_ttft_ms": 5811.19505,
+      "min_ttft_ms": 5592.3428,
+      "max_ttft_ms": 6076.7013,
+      "median_server_prompt_ms": 5805.57,
+      "median_server_prompt_tokens_per_second": 1412.8571068843767,
+      "sampled_peak_vram_mib": 5324,
+      "first_token_ids": [
+        334
+      ]
+    },
+    {
+      "batch": 3072,
+      "microbatch": 768,
+      "repetitions": 4,
+      "median_ttft_ms": 5702.6442,
+      "min_ttft_ms": 5452.348,
+      "max_ttft_ms": 5940.1189,
+      "median_server_prompt_ms": 5696.3695,
+      "median_server_prompt_tokens_per_second": 1439.671664407936,
+      "sampled_peak_vram_mib": 5384,
+      "first_token_ids": [
+        334
+      ]
+    },
+    {
+      "batch": 3072,
+      "microbatch": 1024,
+      "repetitions": 4,
+      "median_ttft_ms": 5675.6902,
+      "min_ttft_ms": 5450.9508,
+      "max_ttft_ms": 5882.7969,
+      "median_server_prompt_ms": 5669.094,
+      "median_server_prompt_tokens_per_second": 1446.7584246143465,
+      "sampled_peak_vram_mib": 5454,
+      "first_token_ids": [
+        334
+      ]
+    }
+  ]
+}
