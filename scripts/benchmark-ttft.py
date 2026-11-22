@@ -192,49 +192,60 @@ def sweep_microbatch(dataset, result, root, archived, options):
     dataset["summary"] = summary
 
 
-def cublas_runtime(root, dataset):
-    runtime = root / "build/llama-cublas"
+def experimental_runtime(root, dataset, backend):
+    runtime = root / {"cublas": "build/llama-cublas", "fp8": "build/llama-prefill-fp8"}[backend]
     manifest = json.loads((runtime / "build.json").read_text(encoding="utf-8"))
     executable = runtime / "bin/llama-server.exe"
-    if (manifest["compile_flag"] != "GGML_CUDA_FORCE_CUBLAS"
+    valid_build = (manifest.get("compile_flag") == "GGML_CUDA_FORCE_CUBLAS" if backend == "cublas"
+                   else bool(manifest.get("fp8_source_sha256")))
+    if (not valid_build
             or manifest["source_commit"] != dataset["source_revision"]
             or manifest["stock_cuda_sha256"] != dataset["cuda_dll_sha256"]
             or manifest["server_sha256"] != dataset["server_sha256"]
             or hashlib.sha256(executable.read_bytes()).hexdigest() != dataset["server_sha256"]
             or hashlib.sha256(executable.with_name("ggml-cuda.dll").read_bytes()).hexdigest()
             != manifest["experiment_cuda_sha256"]):
-        raise RuntimeError("cuBLAS runtime must match the pinned stock build. Run scripts/build-cublas.py again.")
-    dataset["cublas_build"] = manifest
+        raise RuntimeError(f"The {backend} runtime must match the pinned stock build.")
+    dataset[f"{backend}_build"] = manifest
     return executable
 
 
-def compare_cublas(dataset, result, root, archived, options):
+def compare_prefill_backends(dataset, result, root, archived, options):
+    experimental = "fp8" if options.compare_fp8 else "cublas"
+    batch, microbatch = (4096, 1024) if options.compare_fp8 else (512, options.microbatch)
     executables = {
         "stock": root / "build/llama-cuda/bin/llama-server.exe",
-        "cublas": cublas_runtime(root, dataset),
+        experimental: experimental_runtime(root, dataset, experimental),
     }
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     tokens = archived["prose_summary"]
     kv = options.kv or "q8_0"
-    dataset.update(prompt_tokens=len(tokens), batch=512, microbatch=options.microbatch,
+    dataset.update(prompt_tokens=len(tokens), batch=batch, microbatch=microbatch,
                    warmup_prompt_tokens=2048, measured_requests_per_session=3)
     dataset["prompt"] = "Archived 8,192-token project memo; each request processes the entire prompt."
     dataset.pop("reused_prefix")
-    for index, backend in enumerate(("stock", "cublas", "cublas", "stock"), start=1):
-        args = server_args(executables[backend], model, "none", cache_type=kv, microbatch=options.microbatch)
+    marker = {"cublas": "FORCE_CUBLAS = 1", "fp8": "native E4M3 FP8 prefill gate/up active"}[experimental]
+    for index, backend in enumerate(("stock", experimental, experimental, "stock"), start=1):
+        args = server_args(executables[backend], model, "none", cache_type=kv, batch=batch, microbatch=microbatch)
         session = {"backend": backend, "kv_type": kv, "measurements": []}
         dataset["sessions"].append(session)
         log = result.with_name(f"{result.stem}-{index:02}-{backend}.log")
-        with measured_server(args, log, None, session) as base:
+        environment = dict(os.environ)
+        environment.pop("LLM_OPT_PREFILL_FP8", None)
+        if backend == "fp8":
+            environment["LLM_OPT_PREFILL_FP8"] = "1"
+        with measured_server(args, log, environment, session) as base:
             first_token(base, tokens[:dataset["warmup_prompt_tokens"]])
             for _ in range(dataset["measured_requests_per_session"]):
                 session["measurements"].append(first_token(base, tokens))
 
         log_text = log.read_text(encoding="utf-8", errors="replace")
-        if not re.search(rf"\bn_ubatch\s*=\s*{options.microbatch}\b", log_text):
-            raise RuntimeError(f"Effective microbatch not confirmed: inspect {log}")
-        if ("FORCE_CUBLAS = 1" in log_text) != (backend == "cublas"):
-            raise RuntimeError(f"Unexpected cuBLAS build flag: inspect {log}")
+        if (not re.search(rf"\bn_batch\s*=\s*{batch}\b", log_text)
+                or not re.search(rf"\bn_ubatch\s*=\s*{microbatch}\b", log_text)):
+            raise RuntimeError(f"Effective batch sizes not confirmed: inspect {log}")
+        if (marker in log_text) != (backend == experimental):
+            raise RuntimeError(f"Unexpected {experimental} dispatch: inspect {log}")
+        session["experimental_dispatch_confirmed"] = marker in log_text
         timings = [row["ttft_ms"] for row in session["measurements"]]
         print(f"{backend}: TTFT median {median(timings):.1f} ms, "
               f"peak {session['sampled_peak_vram_mib']} MiB", flush=True)
@@ -255,39 +266,52 @@ def compare_cublas(dataset, result, root, archived, options):
 
 
 def profile(dataset, result, root, archived, options):
-    executable = cublas_runtime(root, dataset) if options.cublas else root / "build/llama-cuda/bin/llama-server.exe"
+    batch, microbatch = (4096, 1024) if options.profile_fp8 else (512, options.microbatch)
+    backends = ("stock", "fp8") if options.profile_fp8 else ("cublas" if options.cublas else "stock",)
+    cache_types = (options.kv,) if options.kv else (("q8_0",) if options.profile_fp8 else KV_TYPES)
+    warmup = 2048 if options.profile_fp8 else 512
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     trace_root = root / "profiles"
     trace_root.mkdir(exist_ok=True)
     dataset["profiler"] = subprocess.check_output(["nsys", "--version"], text=True).strip()
-    dataset["microbatch"] = options.microbatch
-    dataset["backend"] = "cublas" if options.cublas else "stock"
+    dataset.update(batch=batch, microbatch=microbatch, warmup_prompt_tokens=warmup)
+    if len(backends) == 1:
+        dataset["backend"] = backends[0]
     tokens, _ = prompt_pair(archived, 8192)
-    for kv in (options.kv,) if options.kv else KV_TYPES:
-        prefix = trace_root / f"{result.stem}-{kv}"
+    executables = {backend: (root / "build/llama-cuda/bin/llama-server.exe" if backend == "stock"
+                             else experimental_runtime(root, dataset, backend)) for backend in backends}
+    for backend, kv in ((backend, kv) for backend in backends for kv in cache_types):
+        suffix = f"{backend}-{kv}" if options.profile_fp8 else kv
+        prefix = trace_root / f"{result.stem}-{suffix}"
         log = result.with_name(f"{prefix.name}.log")
         server_log = result.with_name(f"{prefix.name}-server.log")
         args = ["nsys", "profile", "--trace=cuda", "--sample=none", "--cpuctxsw=none",
                 "--cuda-graph-trace=node", "--duration=25", "--kill=true", "--output", str(prefix),
-                *server_args(executable, model, "none", cache_type=kv, microbatch=options.microbatch),
+                *server_args(executables[backend], model, "none", cache_type=kv, batch=batch, microbatch=microbatch),
                 "--log-file", str(server_log)]
-        session = {"kv_type": kv, "trace": f"{prefix.name}.nsys-rep", "depth": len(tokens)}
+        session = {"backend": backend, "kv_type": kv, "trace": f"{prefix.name}.nsys-rep", "depth": len(tokens)}
         dataset["sessions"].append(session)
-        print(f"Tracing fresh {len(tokens)}-token prefill with {kv} cache", flush=True)
-        with local_server(args, log, exit_timeout=45) as (base, command):
+        print(f"Tracing fresh {len(tokens)}-token {backend} prefill with {kv} cache", flush=True)
+        environment = dict(os.environ)
+        environment.pop("LLM_OPT_PREFILL_FP8", None)
+        if backend == "fp8":
+            environment["LLM_OPT_PREFILL_FP8"] = "1"
+        with local_server(args, log, environment=environment, exit_timeout=45) as (base, command):
             session["command"] = command
-            first_token(base, tokens[:512])
+            first_token(base, tokens[:warmup])
             session["request"] = first_token(base, tokens)
         log_text = server_log.read_text(encoding="utf-8", errors="replace")
         if "offloaded 37/37 layers to GPU" not in log_text:
             raise RuntimeError(f"Full GPU offload not confirmed: inspect {server_log}")
-        if ("FORCE_CUBLAS = 1" in log_text) != options.cublas:
+        if ("FORCE_CUBLAS = 1" in log_text) != (backend == "cublas"):
             raise RuntimeError(f"Unexpected cuBLAS build flag: inspect {server_log}")
+        if ("native E4M3 FP8 prefill gate/up active" in log_text) != (backend == "fp8"):
+            raise RuntimeError(f"Unexpected FP8 dispatch: inspect {server_log}")
         database = prefix.with_suffix(".sqlite")
         with log.open("a", encoding="utf-8") as output:
             subprocess.run(["nsys", "export", "--type", "sqlite", "--output", str(database),
                             str(prefix.with_suffix(".nsys-rep"))], stdout=output, stderr=output, check=True)
-        session["cuda"] = analyze(database, session["request"], microbatch=options.microbatch)
+        session["cuda"] = analyze(database, session["request"], microbatch=microbatch)
         print(f"  captured {session['cuda']['kernel_calls']} kernels", flush=True)
 
 
@@ -305,6 +329,8 @@ def main():
     group.add_argument("--compare-microbatches", nargs=3, type=int, metavar=("BATCH", "FIRST", "SECOND"),
                        help="Compare two microbatch sizes at the same logical batch on fresh 8K.")
     group.add_argument("--compare-cublas", action="store_true", help="Compare stock and forced cuBLAS at fresh 8K.")
+    group.add_argument("--compare-fp8", action="store_true", help="Compare FP8 gate/up and stock integer prefill at fresh 8K.")
+    group.add_argument("--profile-fp8", action="store_true", help="Trace stock and FP8 prefill at fresh 8K.")
     options = parser.parse_args()
     if options.cublas and not options.profile:
         parser.error("--cublas requires --profile. Use --compare-cublas for unprofiled timing.")
@@ -321,6 +347,8 @@ def main():
     if options.profile:
         label = "prefill-profile-8k-cublas" if options.cublas else "prefill-profile-8k"
         run = profile
+    elif options.profile_fp8:
+        label, run = "prefill-profile-8k-fp8", profile
     elif options.sweep_microbatch:
         label, run = "ttft-microbatch-8k", sweep_microbatch
     elif options.sweep_large_microbatch:
@@ -328,7 +356,9 @@ def main():
     elif options.compare_microbatches:
         label, run = "ttft-microbatch-compare-8k", sweep_microbatch
     elif options.compare_cublas:
-        label, run = "ttft-cublas-8k", compare_cublas
+        label, run = "ttft-cublas-8k", compare_prefill_backends
+    elif options.compare_fp8:
+        label, run = "ttft-fp8-8k", compare_prefill_backends
     result = PROJECT / "results" / f"{label}-{stamp}.json"
     source_revision = subprocess.check_output(["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip()
     dataset = {

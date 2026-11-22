@@ -12,6 +12,12 @@ def kernel_family(name):
         return "quantized_matmul_and_activation_prep"
     if "gemm" in name.lower():
         return "gemm"
+    if name.startswith(("q4_k_fp8_bound", "q4_k_pack_fp8")):
+        return "fp8_weight_preparation"
+    if name.startswith(("fp8_amax", "quantize_fp8_e4m3")):
+        return "fp8_activation_preparation"
+    if name == "prefill_fp8_swiglu":
+        return "fp8_swiglu"
     if name.startswith(("dequantize_block_q4_K", "dequantize_block_q6_K")):
         return "q4_k_and_q6_k_weight_dequantization"
     if name.startswith(("dequantize_", "convert_unary", "cpy_")):

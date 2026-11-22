@@ -422,3 +422,25 @@ The 12 requests completed on AC with all 37 layers offloaded and the same first 
 ### Selected fresh 8K TTFT configuration
 
 Use logical batch 4,096 and microbatch 1,024 (`-b 4096 -ub 1024`) for fresh 8K Q8_0 TTFT comparisons. Median TTFT fell from 7.181 s in the first stock run at 512/128 to 5.451 s at 4,096/1,024, a reduction of 1.730 s (24.1%). Both used the same prompt, model, Q8_0 K/V cache, and stock CUDA binaries. This compares separate benchmark sessions and includes changes to both batch sizes. [Original streaming baseline](../results/ttft-20261122T034508Z.json) · [Selected configuration](../results/ttft-microbatch-compare-8k-20261122T180050Z.json)
+
+## 2026-11-22 FP8 gate/up prefill versus stock integer MMQ
+
+The experimental CUDA DLL replaces the hot fused Q4_K gate/up/SwiGLU path at the Qwen3 8B prefill shape of 4,096 input features, 12,288 output features, and 1,024 token columns on Ada. It derives a scale from the Q4_K subgroup endpoints, converts each weight matrix into a reusable E4M3 scratch buffer, and calls the pinned native FP8 cuBLASLt implementation. Each call packs the shared activation input to FP8. It applies SwiGLU in a separate kernel. The timings include all of this work. [FP8 implementation](../benchmarks/prefill-mmq/fp8.inc)
+
+The comparison uses the fresh 8,192-token memo, the same Qwen3 8B Q4_K_M checkpoint, Q8_0 K and V, and batch/microbatch 4,096/1,024. It runs stock → FP8 → FP8 → stock, with a 2,048-token warmup and three measured requests per session. The FP8 path must find a native cuBLASLt algorithm and log its activation for the experiment to pass.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\build-prefill-mmq.py --fp8
+python .\scripts\benchmark-ttft.py --compare-fp8
+python .\scripts\benchmark-ttft.py --profile-fp8
+```
+
+| Prefill path | Median TTFT | TTFT range | Median prefill speed | Sampled peak VRAM |
+| --- | ---: | ---: | ---: | ---: |
+| Stock integer MMQ | 5.436 s | 5.378–5.876 s | 1,509 tok/s | 5,454 MiB |
+| Native E4M3 FP8 gate/up | 5.565 s | 5.479–5.915 s | 1,474 tok/s | 5,546 MiB |
+
+FP8 added 128 ms (2.4%) to median TTFT and 92 MiB to sampled peak VRAM. It was slower in both test orders. All 12 requests completed on AC with 37/37 layers offloaded and the same first token. [Paired timings](../results/ttft-fp8-8k-20261122T181738Z.json)
+
+One CUDA trace per arm confirmed the implementation and the cost of the surrounding operations. The stock path ran 280 fused integer kernels and their preceding Q8_1 activation packs in 2.114 s. The FP8 path replaced those with 560 native `sm89` E4M3 GEMMs taking 1.511 s, plus 337 ms for weight preparation, 170 ms for activation preparation, and 239 ms for SwiGLU. Those FP8 kernels total 2.257 s. The first-token check covers this prompt, so output quality across longer generations remains open. [CUDA trace summaries](../results/prefill-profile-8k-fp8-20261122T181940Z.json)

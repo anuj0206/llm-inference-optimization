@@ -1,0 +1,426 @@
+{
+  "status": "passed",
+  "fixture": "ngram-prose-8k-20261121T230013Z.json",
+  "context_capacity": 8448,
+  "prompt": "Archived project memo, shortened by keeping the first 128 tokens and the tail.",
+  "reused_prefix": "Same slot immediately after the fresh request, replacing its final 128 tokens with the freeform suffix.",
+  "ttft_definition": "Elapsed wall time from opening the loopback HTTP request to the first streamed token event.",
+  "model_manifest": {
+    "repository": "Qwen/Qwen3-8B-GGUF",
+    "revision": "7c41481f57cb95916b40956ab2f0b139b296d974",
+    "filename": "Qwen3-8B-Q4_K_M.gguf",
+    "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+    "size_bytes": 5027783488,
+    "license": "Apache-2.0"
+  },
+  "source_revision": "8bf88ba9368e70fe3ba1b0001b34e70ffc713716",
+  "server_sha256": "a203cde62e4624cefc18a898e70c23363e3156a9ffcaf2d466f581d0fd0c05c0",
+  "cuda_dll_sha256": "fecc0a2822e2ff9f6078d05a7bad77554174007d28b7600b6fd7c2a66d33e49c",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU, 582.05, 6141 MiB",
+  "sessions": [
+    {
+      "backend": "stock",
+      "kv_type": "q8_0",
+      "trace": "prefill-profile-8k-fp8-20261122T181940Z-stock-q8_0.nsys-rep",
+      "depth": 8192,
+      "command": [
+        "nsys",
+        "profile",
+        "--trace=cuda",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--cuda-graph-trace=node",
+        "--duration=25",
+        "--kill=true",
+        "--output",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\profiles\\prefill-profile-8k-fp8-20261122T181940Z-stock-q8_0",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-cuda\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "4096",
+        "-ub",
+        "1024",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--log-file",
+        "C:\\Users\\anujk\\OneDrive\\Documents\\ChatGPT\\LLM Optimization Project\\results\\prefill-profile-8k-fp8-20261122T181940Z-stock-q8_0-server.log",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "61049",
+        "--no-webui"
+      ],
+      "request": {
+        "ttft_ms": 5875.0913,
+        "server_timings": {
+          "cache_n": 0,
+          "prompt_n": 8192,
+          "prompt_ms": 5869.492,
+          "prompt_per_token_ms": 0.71649072265625,
+          "prompt_per_second": 1395.6914840330305,
+          "predicted_n": 1,
+          "predicted_ms": 0.001,
+          "predicted_per_token_ms": 0.0,
+          "predicted_per_second": 0.0
+        },
+        "first_token": 334,
+        "first_content": "**",
+        "request_started_utc_ns": 1795371588907535800,
+        "first_token_utc_ns": 1795371594782627100
+      },
+      "cuda": {
+        "request_window_ms": 5875.0913,
+        "time_to_first_kernel_ms": 15.932632,
+        "last_kernel_to_first_token_ms": 2.017449,
+        "summed_cuda_kernel_ms": 5807.798768,
+        "kernel_interval_union_ms": 5807.798768,
+        "kernel_or_copy_union_ms": 5825.385834,
+        "without_observed_kernels_or_copies_ms": 49.705466,
+        "summed_memcpy_ms": 17.587066,
+        "memcpy_events": 42,
+        "flash_attention_calls_excluding_fixup": 576,
+        "kernel_calls": 8883,
+        "families": {
+          "quantized_matmul_and_activation_prep": {
+            "ms": 4253.46298,
+            "pct_summed_kernel_time": 73.2370929143735
+          },
+          "flash_attention": {
+            "ms": 1005.534189,
+            "pct_summed_kernel_time": 17.31351634530324
+          },
+          "other": {
+            "ms": 456.873451,
+            "pct_summed_kernel_time": 7.866550981712664
+          },
+          "set_rows": {
+            "ms": 56.883311,
+            "pct_summed_kernel_time": 0.9794297852297764
+          },
+          "type_conversion_and_tensor_copy": {
+            "ms": 35.044837,
+            "pct_summed_kernel_time": 0.6034099733808133
+          }
+        },
+        "top_kernels": [
+          {
+            "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30, (bool)1, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+            "calls": 280,
+            "ms": 2094.93384
+          },
+          {
+            "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+            "calls": 1152,
+            "ms": 1335.390895
+          },
+          {
+            "name": "void flash_attn_ext_f16<(int)128, (int)128, (int)16, (int)4, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long long, int, int, long long, int, int, int, int, long long, long long)",
+            "calls": 288,
+            "ms": 996.856958
+          },
+          {
+            "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+            "calls": 280,
+            "ms": 574.825916
+          },
+          {
+            "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long long, long long, long long, long long, long long, int, int, int)",
+            "calls": 1432,
+            "ms": 168.326821
+          },
+          {
+            "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, float>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+            "calls": 576,
+            "ms": 161.613684
+          },
+          {
+            "name": "void k_bin_bcast<&op_add, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+            "calls": 561,
+            "ms": 125.922898
+          },
+          {
+            "name": "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, const T8 *, long long, long long, long long, uint3, uint3, uint3, uint3, float)",
+            "calls": 570,
+            "ms": 80.741562
+          },
+          {
+            "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0>(const float *, const int *, void *, long long, long long, long long, long long, long long, int, int, int)",
+            "calls": 280,
+            "ms": 72.387383
+          },
+          {
+            "name": "void k_set_rows_quant<float, long long, block_q8_0, (int)32, &quantize_f32_q8_0_block>(const T1 *, const T2 *, T3 *, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, uint3, uint3, uint3, uint3, uint3)",
+            "calls": 576,
+            "ms": 56.883311
+          },
+          {
+            "name": "void fwht_cuda<(int)128, float>(const T2 *, float *, long long, float)",
+            "calls": 576,
+            "ms": 45.182867
+          },
+          {
+            "name": "void fwht_cuda<(int)64, float>(const T2 *, float *, long long, float)",
+            "calls": 576,
+            "ms": 43.40428
+          },
+          {
+            "name": "void dequantize_block_q8_0_f16<(bool)0>(const void *, __half *, long long)",
+            "calls": 576,
+            "ms": 35.044837
+          },
+          {
+            "name": "void flash_attn_stream_k_fixup_general<(int)128, (int)16, (int)4>(float *, const float2 *, int, int, int, int, uint3, uint3, uint3, uint3)",
+            "calls": 288,
+            "ms": 4.812709
+          },
+          {
+            "name": "void flash_attn_mask_to_KV_max<(int)16>(const __half2 *, int *, int, long long, long long)",
+            "calls": 288,
+            "ms": 3.864522
+          },
+          {
+            "name": "void mul_mat_q_stream_k_fixup<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30>(const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, uint3, int, int, int, uint3, int, uint3, int, uint3)",
+            "calls": 432,
+            "ms": 3.187153
+          }
+        ]
+      }
+    },
+    {
+      "backend": "fp8",
+      "kv_type": "q8_0",
+      "trace": "prefill-profile-8k-fp8-20261122T181940Z-fp8-q8_0.nsys-rep",
+      "depth": 8192,
+      "command": [
+        "nsys",
+        "profile",
+        "--trace=cuda",
+        "--sample=none",
+        "--cpuctxsw=none",
+        "--cuda-graph-trace=node",
+        "--duration=25",
+        "--kill=true",
+        "--output",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\profiles\\prefill-profile-8k-fp8-20261122T181940Z-fp8-q8_0",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\build\\llama-prefill-fp8\\bin\\llama-server.exe",
+        "-m",
+        "C:\\Users\\anujk\\AppData\\Local\\LLMOptimization\\models\\Qwen3-8B-Q4_K_M.gguf",
+        "-ngl",
+        "99",
+        "-c",
+        "8448",
+        "-np",
+        "1",
+        "-b",
+        "4096",
+        "-ub",
+        "1024",
+        "-t",
+        "8",
+        "-fa",
+        "on",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--fit",
+        "off",
+        "--metrics",
+        "-lv",
+        "4",
+        "--spec-type",
+        "none",
+        "--log-file",
+        "C:\\Users\\anujk\\OneDrive\\Documents\\ChatGPT\\LLM Optimization Project\\results\\prefill-profile-8k-fp8-20261122T181940Z-fp8-q8_0-server.log",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "61086",
+        "--no-webui"
+      ],
+      "request": {
+        "ttft_ms": 6134.4136,
+        "server_timings": {
+          "cache_n": 0,
+          "prompt_n": 8192,
+          "prompt_ms": 6128.767,
+          "prompt_per_token_ms": 0.7481405029296875,
+          "prompt_per_second": 1336.6473223733258,
+          "predicted_n": 1,
+          "predicted_ms": 0.001,
+          "predicted_per_token_ms": 0.0,
+          "predicted_per_second": 0.0
+        },
+        "first_token": 334,
+        "first_content": "**",
+        "request_started_utc_ns": 1795371617105053300,
+        "first_token_utc_ns": 1795371623239466900
+      },
+      "cuda": {
+        "request_window_ms": 6134.4136,
+        "time_to_first_kernel_ms": 22.735014,
+        "last_kernel_to_first_token_ms": 1.63681,
+        "summed_cuda_kernel_ms": 6056.17159,
+        "kernel_interval_union_ms": 6055.81899,
+        "kernel_or_copy_union_ms": 6073.335141,
+        "without_observed_kernels_or_copies_ms": 61.078459,
+        "summed_memcpy_ms": 17.516151,
+        "memcpy_events": 42,
+        "flash_attention_calls_excluding_fixup": 576,
+        "kernel_calls": 11963,
+        "families": {
+          "quantized_matmul_and_activation_prep": {
+            "ms": 2200.061122,
+            "pct_summed_kernel_time": 36.327588961197186
+          },
+          "gemm": {
+            "ms": 1510.880443,
+            "pct_summed_kernel_time": 24.947781292966965
+          },
+          "flash_attention": {
+            "ms": 1042.218055,
+            "pct_summed_kernel_time": 17.209189659040028
+          },
+          "other": {
+            "ms": 463.239826,
+            "pct_summed_kernel_time": 7.649053847234207
+          },
+          "fp8_weight_preparation": {
+            "ms": 336.604712,
+            "pct_summed_kernel_time": 5.5580445005191805
+          },
+          "fp8_swiglu": {
+            "ms": 239.097545,
+            "pct_summed_kernel_time": 3.947998194020787
+          },
+          "fp8_activation_preparation": {
+            "ms": 170.188062,
+            "pct_summed_kernel_time": 2.8101591817678337
+          },
+          "set_rows": {
+            "ms": 58.692278,
+            "pct_summed_kernel_time": 0.9691316886878365
+          },
+          "type_conversion_and_tensor_copy": {
+            "ms": 35.189547,
+            "pct_summed_kernel_time": 0.5810526745659794
+          }
+        },
+        "top_kernels": [
+          {
+            "name": "sm89_xmma_gemm_e4m3f32_e4m3f32_f32_tn_n_tilesize128x64x64_stage4_warpsize2x2x1_tensor16x8x32_algo2_execute_kernel__5x_cublas",
+            "calls": 560,
+            "ms": 1510.880443
+          },
+          {
+            "name": "void mul_mat_q<(ggml_type)12, (int)128, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+            "calls": 1152,
+            "ms": 1377.061102
+          },
+          {
+            "name": "void flash_attn_ext_f16<(int)128, (int)128, (int)16, (int)4, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char *, const char *, const int *, const int *, float *, float2 *, float, float, float, float, unsigned int, float, int, uint3, int, int, int, int, int, int, int, int, int, int, int, long long, int, int, long long, int, int, int, int, long long, long long)",
+            "calls": 288,
+            "ms": 1033.373591
+          },
+          {
+            "name": "void mul_mat_q<(ggml_type)14, (int)128, (bool)0, (ggml_prec)30, (bool)0, (bool)0>(const char *, const char *, const int *, const int *, const ggml_cuda_mm_id_tile_spec *, float *, float *, const float *, ggml_glu_op, float, const float *, const float *, uint3, int, int, int, int, int, uint3, uint3, int, int, int, uint3, uint3, int, int, int, uint3)",
+            "calls": 280,
+            "ms": 592.644851
+          },
+          {
+            "name": "q4_k_pack_fp8(const block_q4_K *, unsigned char *, const unsigned int *, float *)",
+            "calls": 560,
+            "ms": 292.32722
+          },
+          {
+            "name": "prefill_fp8_swiglu(float *, const float *, int)",
+            "calls": 280,
+            "ms": 239.097545
+          },
+          {
+            "name": "void rms_norm_mul_rope_f32<(int)256, (bool)0, float>(const float *, T3 *, int, int, int, long long, long long, long long, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, int, const int *, float, float, float, rope_corr_dims, float, const float *, const long long *, int, bool)",
+            "calls": 576,
+            "ms": 166.617134
+          },
+          {
+            "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)1, (bool)0>(const float *, const int *, void *, long long, long long, long long, long long, long long, int, int, int)",
+            "calls": 1152,
+            "ms": 150.005959
+          },
+          {
+            "name": "void k_bin_bcast<&op_add, float, float, float, const float *>(const T2 *, const T3 *, T4 *, unsigned int, unsigned int, unsigned int, uint3, uint3, uint3, uint3, uint3, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, T5...)",
+            "calls": 561,
+            "ms": 126.091914
+          },
+          {
+            "name": "quantize_fp8_e4m3(const float *, unsigned char *, const float *, float *, long long, long long, long long, long long, long long, long long, long long)",
+            "calls": 560,
+            "ms": 87.306546
+          },
+          {
+            "name": "fp8_amax_partials(fp8_abs_src, long long, float *)",
+            "calls": 560,
+            "ms": 81.890742
+          },
+          {
+            "name": "void rms_norm_f32<float, (int)1024, (int)1, (bool)1, (bool)1, (bool)0, (bool)0, float>(const T1 *, T1 *, int, int, int, long long, long long, long long, float, const float *, long long, long long, long long, uint3, uint3, uint3, uint3, const T8 *, long long, long long, long long, uint3, uint3, uint3, uint3, float)",
+            "calls": 570,
+            "ms": 81.354555
+          },
+          {
+            "name": "void quantize_mmq_q8_1<(mmq_q8_1_ds_layout)0, (bool)0>(const float *, const int *, void *, long long, long long, long long, long long, long long, int, int, int)",
+            "calls": 280,
+            "ms": 72.608283
+          },
+          {
+            "name": "void k_set_rows_quant<float, long long, block_q8_0, (int)32, &quantize_f32_q8_0_block>(const T1 *, const T2 *, T3 *, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, long long, uint3, uint3, uint3, uint3, uint3)",
+            "calls": 576,
+            "ms": 58.692278
+          },
+          {
+            "name": "void fwht_cuda<(int)128, float>(const T2 *, float *, long long, float)",
+            "calls": 576,
+            "ms": 45.534454
+          },
+          {
+            "name": "q4_k_fp8_bound(const block_q4_K *, int, unsigned int *)",
+            "calls": 560,
+            "ms": 44.277492
+          }
+        ]
+      }
+    }
+  ],
+  "profiler": "NVIDIA Nsight Systems version 2026.5.2.323-265239015215v0",
+  "batch": 4096,
+  "microbatch": 1024,
+  "warmup_prompt_tokens": 2048,
+  "fp8_build": {
+    "source_commit": "8bf88ba9368e70fe3ba1b0001b34e70ffc713716",
+    "dispatcher_sha256": "6e00ac1c8344ae18475c5efaf74eb09536fce6fa05886a2d9423a0c1422954fa",
+    "stock_cuda_sha256": "fecc0a2822e2ff9f6078d05a7bad77554174007d28b7600b6fd7c2a66d33e49c",
+    "experiment_cuda_sha256": "ed8227020e36c4aba39f7e93f707711a874a63dda347ecd9b06c5931c4466608",
+    "server_sha256": "a203cde62e4624cefc18a898e70c23363e3156a9ffcaf2d466f581d0fd0c05c0",
+    "fp8_source_sha256": "b4dafe2af8c1418780c36674e5be525101221059012ce4b4257116597071f4e5"
+  }
+}
