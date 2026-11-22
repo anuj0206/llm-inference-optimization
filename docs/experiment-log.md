@@ -296,8 +296,8 @@ The profile traces the same loopback server and fresh 8,192-token fixture with o
 
 ```powershell
 . .\scripts\enter-dev.ps1
-python .\scripts\benchmark-ttft.py
-python .\scripts\benchmark-ttft.py --profile
+python .\scripts\benchmark-ttft.py --microbatch 128
+python .\scripts\benchmark-ttft.py --profile --microbatch 128
 ```
 
 | Prompt length | Q8_0 fresh TTFT | FP16 fresh TTFT | Q8_0 reused prefix | FP16 reused prefix |
@@ -335,3 +335,28 @@ python .\scripts\benchmark-ttft.py --sweep-microbatch
 | 512 | 6.048 s | 5.552–6.421 s | 1,359 tok/s | 5,315 MiB |
 
 Each setting has six measured requests. All 18 returned the same first token and used 37/37 GPU layers. The laptop ran on AC, and sampled session temperature peaks ranged from 62 to 75 °C. Microbatch 512 had the lowest median in every block. Its overall median was 0.77 s lower than the 128 baseline, a reduction of 11.2%, for another 58 MiB of sampled peak VRAM. That leaves 826 MiB of the reported 6,141 MiB on the device. The CUDA compute buffer grew from 45.07 MiB at 128 to 57.13 MiB at 256 and 112.26 MiB at 512. The experiment measures the setting's effect on one fresh 8K prompt, with first-token agreement as the output check. [Raw timings and session telemetry](../results/ttft-microbatch-8k-20261122T035931Z.json)
+
+Batch 512 and microbatch 512 are the baseline for subsequent TTFT measurements and prefill profiles.
+
+## 2026-11-21 cuBLAS prefill comparison
+
+The comparison rebuilds `ggml-cuda.cu`, `mmq.cu`, and `mmq-few.cu` with the pinned upstream `GGML_CUDA_FORCE_CUBLAS` definition and relinks `ggml-cuda.dll` in a separate runtime. The flag disables the standard and small-batch quantized matrix multiplication routes so eligible operations fall through to cuBLAS. The benchmark checks the source revision and binary hashes, and both arms use the same `llama-server.exe`.
+
+Each arm runs the archived fresh 8,192-token memo with Qwen3 8B Q4_K_M, a Q8_0 K/V cache, and batch and microbatch 512. The timing order is stock, cuBLAS, cuBLAS, stock, with one 2K warmup and three measured requests per server session. CUDA traces use the same 8K prompt and settings to identify GEMM and weight conversion costs.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\build-cublas.py
+python .\scripts\benchmark-ttft.py --compare-cublas
+python .\scripts\benchmark-ttft.py --profile --kv q8_0
+python .\scripts\benchmark-ttft.py --profile --kv q8_0 --cublas
+```
+
+| Prefill path | Median TTFT | TTFT range | Median prefill speed | Sampled peak VRAM |
+| --- | ---: | ---: | ---: | ---: |
+| Stock quantized matmul | 5.469 s | 5.318–5.955 s | 1,500 tok/s | 5,315 MiB |
+| Forced cuBLAS | 6.990 s | 6.948–7.532 s | 1,173 tok/s | 5,439 MiB |
+
+Forced cuBLAS increased median time to first token by 1.52 s (27.8%) and peak sampled VRAM by 124 MiB. The 12 requests finished on AC with all 37 layers on the GPU. Each session peaked at 70 °C, and every request returned the same first token. The 5.469 s stock figure comes from this paired run. The earlier microbatch sweep measured 6.048 s with the same stock settings. [Raw paired timings](../results/ttft-cublas-8k-20261122T040755Z.json)
+
+One 8K trace per arm confirmed the dispatch. The stock quantized matmul kernels and activation packing took 4.503 s. With cuBLAS, GEMMs took 3.566 s, Q4_K and Q6_K weight unpacking to FP16 took 1.524 s, and the separate FP32-to-FP16 and FP16-to-FP32 activation casts took 0.565 s. A separate gated SiLU kernel took 0.257 s in the cuBLAS trace. The GEMMs finished faster in isolation, while the surrounding work increased total prefill latency. Flash Attention took 0.985 s on stock and 1.047 s with cuBLAS. The experiment selects stock quantized matmul at batch and microbatch 512 as the TTFT reference. [Stock trace summary](../results/prefill-profile-8k-20261122T040949Z.json) · [cuBLAS trace summary](../results/prefill-profile-8k-cublas-20261122T041022Z.json)

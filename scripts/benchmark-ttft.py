@@ -21,6 +21,7 @@ PROJECT = Path(__file__).resolve().parent.parent
 FIXTURE = PROJECT / "results/ngram-prose-8k-20261121T230013Z.json"
 DEPTHS = (2048, 4096, 8192)
 KV_TYPES = ("q8_0", "f16")
+BASELINE_MICROBATCH = 512
 MICROBATCH_SIZES = (128, 256, 512)
 NEW_TOKENS = 128
 
@@ -103,8 +104,9 @@ def benchmark(dataset, result, root, archived, options):
     schedule += [(kv, depths[::-1]) for kv in reversed(cache_types)]
     executable = root / "build/llama-cuda/bin/llama-server.exe"
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
+    dataset["microbatch"] = options.microbatch
     for index, (kv, order) in enumerate(schedule, start=1):
-        args = server_args(executable, model, "none", cache_type=kv)
+        args = server_args(executable, model, "none", cache_type=kv, microbatch=options.microbatch)
         session = {"kv_type": kv, "measurements": []}
         dataset["sessions"].append(session)
         log = result.with_name(f"{result.stem}-{index:02}-{kv}.log")
@@ -173,12 +175,76 @@ def sweep_microbatch(dataset, result, root, archived, options):
     dataset["summary"] = summary
 
 
+def cublas_runtime(root, dataset):
+    runtime = root / "build/llama-cublas"
+    manifest = json.loads((runtime / "build.json").read_text(encoding="utf-8"))
+    executable = runtime / "bin/llama-server.exe"
+    if (manifest["compile_flag"] != "GGML_CUDA_FORCE_CUBLAS"
+            or manifest["source_commit"] != dataset["source_revision"]
+            or manifest["stock_cuda_sha256"] != dataset["cuda_dll_sha256"]
+            or manifest["server_sha256"] != dataset["server_sha256"]
+            or hashlib.sha256(executable.read_bytes()).hexdigest() != dataset["server_sha256"]
+            or hashlib.sha256(executable.with_name("ggml-cuda.dll").read_bytes()).hexdigest()
+            != manifest["experiment_cuda_sha256"]):
+        raise RuntimeError("cuBLAS runtime must match the pinned stock build. Run scripts/build-cublas.py again.")
+    dataset["cublas_build"] = manifest
+    return executable
+
+
+def compare_cublas(dataset, result, root, archived, options):
+    executables = {
+        "stock": root / "build/llama-cuda/bin/llama-server.exe",
+        "cublas": cublas_runtime(root, dataset),
+    }
+    model = root / "models/Qwen3-8B-Q4_K_M.gguf"
+    tokens = archived["prose_summary"]
+    kv = options.kv or "q8_0"
+    dataset.update(prompt_tokens=len(tokens), batch=512, microbatch=options.microbatch,
+                   warmup_prompt_tokens=2048, measured_requests_per_session=3)
+    dataset["prompt"] = "Archived 8,192-token project memo; each request processes the entire prompt."
+    dataset.pop("reused_prefix")
+    for index, backend in enumerate(("stock", "cublas", "cublas", "stock"), start=1):
+        args = server_args(executables[backend], model, "none", cache_type=kv, microbatch=options.microbatch)
+        session = {"backend": backend, "kv_type": kv, "measurements": []}
+        dataset["sessions"].append(session)
+        log = result.with_name(f"{result.stem}-{index:02}-{backend}.log")
+        with measured_server(args, log, None, session) as base:
+            first_token(base, tokens[:dataset["warmup_prompt_tokens"]])
+            for _ in range(dataset["measured_requests_per_session"]):
+                session["measurements"].append(first_token(base, tokens))
+
+        log_text = log.read_text(encoding="utf-8", errors="replace")
+        if not re.search(rf"\bn_ubatch\s*=\s*{options.microbatch}\b", log_text):
+            raise RuntimeError(f"Effective microbatch not confirmed: inspect {log}")
+        if ("FORCE_CUBLAS = 1" in log_text) != (backend == "cublas"):
+            raise RuntimeError(f"Unexpected cuBLAS build flag: inspect {log}")
+        timings = [row["ttft_ms"] for row in session["measurements"]]
+        print(f"{backend}: TTFT median {median(timings):.1f} ms, "
+              f"peak {session['sampled_peak_vram_mib']} MiB", flush=True)
+
+    dataset["summary"] = {}
+    for backend in executables:
+        sessions = [s for s in dataset["sessions"] if s["backend"] == backend]
+        rows = [row for session in sessions for row in session["measurements"]]
+        timings = [row["ttft_ms"] for row in rows]
+        dataset["summary"][backend] = {
+            "repetitions": len(rows), "median_ttft_ms": median(timings),
+            "min_ttft_ms": min(timings), "max_ttft_ms": max(timings),
+            "median_server_prompt_tokens_per_second": median(
+                row["server_timings"]["prompt_per_second"] for row in rows),
+            "sampled_peak_vram_mib": max(s["sampled_peak_vram_mib"] for s in sessions),
+            "first_token_ids": sorted({row["first_token"] for row in rows}),
+        }
+
+
 def profile(dataset, result, root, archived, options):
-    executable = root / "build/llama-cuda/bin/llama-server.exe"
+    executable = cublas_runtime(root, dataset) if options.cublas else root / "build/llama-cuda/bin/llama-server.exe"
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     trace_root = root / "profiles"
     trace_root.mkdir(exist_ok=True)
     dataset["profiler"] = subprocess.check_output(["nsys", "--version"], text=True).strip()
+    dataset["microbatch"] = options.microbatch
+    dataset["backend"] = "cublas" if options.cublas else "stock"
     tokens, _ = prompt_pair(archived, 8192)
     for kv in (options.kv,) if options.kv else KV_TYPES:
         prefix = trace_root / f"{result.stem}-{kv}"
@@ -186,7 +252,8 @@ def profile(dataset, result, root, archived, options):
         server_log = result.with_name(f"{prefix.name}-server.log")
         args = ["nsys", "profile", "--trace=cuda", "--sample=none", "--cpuctxsw=none",
                 "--cuda-graph-trace=node", "--duration=25", "--kill=true", "--output", str(prefix),
-                *server_args(executable, model, "none", cache_type=kv), "--log-file", str(server_log)]
+                *server_args(executable, model, "none", cache_type=kv, microbatch=options.microbatch),
+                "--log-file", str(server_log)]
         session = {"kv_type": kv, "trace": f"{prefix.name}.nsys-rep", "depth": len(tokens)}
         dataset["sessions"].append(session)
         print(f"Tracing fresh {len(tokens)}-token prefill with {kv} cache", flush=True)
@@ -194,24 +261,32 @@ def profile(dataset, result, root, archived, options):
             session["command"] = command
             first_token(base, tokens[:512])
             session["request"] = first_token(base, tokens)
-        if "offloaded 37/37 layers to GPU" not in server_log.read_text(encoding="utf-8", errors="replace"):
+        log_text = server_log.read_text(encoding="utf-8", errors="replace")
+        if "offloaded 37/37 layers to GPU" not in log_text:
             raise RuntimeError(f"Full GPU offload not confirmed: inspect {server_log}")
+        if ("FORCE_CUBLAS = 1" in log_text) != options.cublas:
+            raise RuntimeError(f"Unexpected cuBLAS build flag: inspect {server_log}")
         database = prefix.with_suffix(".sqlite")
         with log.open("a", encoding="utf-8") as output:
             subprocess.run(["nsys", "export", "--type", "sqlite", "--output", str(database),
                             str(prefix.with_suffix(".nsys-rep"))], stdout=output, stderr=output, check=True)
-        session["cuda"] = analyze(database, session["request"])
+        session["cuda"] = analyze(database, session["request"], microbatch=options.microbatch)
         print(f"  captured {session['cuda']['kernel_calls']} kernels", flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kv", choices=KV_TYPES)
+    parser.add_argument("--microbatch", type=int, choices=MICROBATCH_SIZES, default=BASELINE_MICROBATCH)
+    parser.add_argument("--cublas", action="store_true", help="Use the cuBLAS build with --profile.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--depth", type=int, choices=DEPTHS)
     group.add_argument("--profile", action="store_true", help="Trace a fresh 8K request in Nsight Systems.")
     group.add_argument("--sweep-microbatch", action="store_true", help="Sweep 128, 256, and 512 at fresh 8K.")
+    group.add_argument("--compare-cublas", action="store_true", help="Compare stock and forced cuBLAS at fresh 8K.")
     options = parser.parse_args()
+    if options.cublas and not options.profile:
+        parser.error("--cublas requires --profile. Use --compare-cublas for unprofiled timing.")
     root = Path(os.environ["LLM_OPT_ROOT"])
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     executable = root / "build/llama-cuda/bin/llama-server.exe"
@@ -219,9 +294,12 @@ def main():
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     label, run = "ttft", benchmark
     if options.profile:
-        label, run = "prefill-profile-8k", profile
+        label = "prefill-profile-8k-cublas" if options.cublas else "prefill-profile-8k"
+        run = profile
     elif options.sweep_microbatch:
         label, run = "ttft-microbatch-8k", sweep_microbatch
+    elif options.compare_cublas:
+        label, run = "ttft-cublas-8k", compare_cublas
     result = PROJECT / "results" / f"{label}-{stamp}.json"
     source_revision = subprocess.check_output(["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip()
     dataset = {

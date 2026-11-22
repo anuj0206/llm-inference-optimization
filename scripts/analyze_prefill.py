@@ -10,6 +10,10 @@ def kernel_family(name):
         return "flash_attention"
     if name.startswith(("mul_mat_q", "mul_mat_vec_q", "quantize_mmq")):
         return "quantized_matmul_and_activation_prep"
+    if "gemm" in name.lower():
+        return "gemm"
+    if name.startswith(("dequantize_block_q4_K", "dequantize_block_q6_K")):
+        return "q4_k_and_q6_k_weight_dequantization"
     if name.startswith(("dequantize_", "convert_unary", "cpy_")):
         return "type_conversion_and_tensor_copy"
     if "set_rows" in name:
@@ -26,7 +30,7 @@ def interval_union(intervals):
     return covered
 
 
-def analyze(path, request):
+def analyze(path, request, *, microbatch):
     with closing(sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)) as connection:
         epoch, = connection.execute("SELECT utcEpochNs FROM TARGET_INFO_SESSION_START_TIME").fetchone()
         start = request["request_started_utc_ns"] - epoch
@@ -47,7 +51,8 @@ def analyze(path, request):
 
     flash_calls = sum("flash_attn" in short_name and "fixup" not in short_name
                       for _, _, short_name, _ in kernels)
-    if flash_calls not in (8192 // 128 * 36, 8192 // 128 * 36 * 2):
+    attention_steps = 8192 // microbatch * 36
+    if flash_calls not in (attention_steps, 2 * attention_steps):
         raise RuntimeError(f"Unexpected attention call count ({flash_calls}); inspect the captured window.")
 
     families = defaultdict(int)
