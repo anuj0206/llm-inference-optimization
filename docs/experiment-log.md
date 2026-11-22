@@ -444,3 +444,23 @@ python .\scripts\benchmark-ttft.py --profile-fp8
 FP8 added 128 ms (2.4%) to median TTFT and 92 MiB to sampled peak VRAM. It was slower in both test orders. All 12 requests completed on AC with 37/37 layers offloaded and the same first token. [Paired timings](../results/ttft-fp8-8k-20261122T181738Z.json)
 
 One CUDA trace per arm confirmed the implementation and the cost of the surrounding operations. The stock path ran 280 fused integer kernels and their preceding Q8_1 activation packs in 2.114 s. The FP8 path replaced those with 560 native `sm89` E4M3 GEMMs taking 1.511 s, plus 337 ms for weight preparation, 170 ms for activation preparation, and 239 ms for SwiGLU. Those FP8 kernels total 2.257 s. The first-token check covers this prompt, so output quality across longer generations remains open. [CUDA trace summaries](../results/prefill-profile-8k-fp8-20261122T181940Z.json)
+
+## 2026-11-22 Q4_0 versus Q8_0 KV cache at 8K
+
+The comparison uses the same Qwen3 8B Q4_K_M weights and stock integer prefill with batch/microbatch 4,096/1,024. Both arms use stock Flash Attention, one 8,448-token slot, full CUDA offload, and greedy generation without speculation. Each format applies to both K and V.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-ttft.py --compare-kv
+```
+
+Sessions run Q8_0 → Q4_0 → Q4_0 → Q8_0. Each warms up on 2,048 tokens and streams 128 generated tokens on three fresh copies of the archived 8,192-token prompt. TTFT includes loopback HTTP and prefill. Decode throughput comes from the server's generation timing. NVIDIA telemetry samples total device VRAM every 200 ms. The server logs separately report the allocated KV buffer. A separate session per cache runs three exact-answer retrieval probes from the quality fixture.
+
+| K and V format | Median TTFT (range) | Median decode (range) | Allocated KV | Sampled peak VRAM | Retrieval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Q8_0 | 5.464 s (5.358–5.942) | 28.49 tok/s (28.03–28.74) | 631.12 MiB | 5,454 MiB | 3/3 |
+| Q4_0 | 5.381 s (5.350–5.944) | 28.57 tok/s (28.49–28.73) | 334.12 MiB | 5,158 MiB | 3/3 |
+
+Q4_0 saved 297 MiB of KV allocation (47.1%) and 296 MiB of sampled peak device VRAM, increasing headroom from 687 to 983 MiB on the 6,141 MiB device. Median TTFT was 83 ms lower and decode was 0.08 tok/s higher. The ranges overlap for both timings. All 12 timing requests processed the full prompt with zero cached tokens and 37/37 layers on the GPU on AC power. [Raw timings, memory, and outputs](../results/ttft-kv-compare-8k-20261122T184000Z.json)
+
+Each format recovered all three codes from the 6,870-token retrieval prompts. Both formats matched the exact requested JSON value on two cases and returned the correct code inside a one-field object on the middle case. Each format repeated its own 128-token memo continuation exactly across all six runs. The continuations agreed through token five and diverged at token six. This screen covers three retrieval prompts and one prose prompt, so broader answer quality and maximum usable context remain unmeasured.

@@ -8,6 +8,7 @@ These references cover the experimental code, benchmark methods, and results for
 - [Adaptive n-gram speculation](experiment-log.md#2026-11-21-verification-scores-and-acceptance-based-draft-budget) covers draft ranking, acceptance feedback, and output checks. [Policy source](../benchmarks/ngram)
 - [Grouped Q8_0 attention](experiment-log.md#2026-11-21-custom-grouped-q8_0-decode-attention) describes the custom decode kernel, isolated timing, and full-model comparison. [Kernel source](../benchmarks/attention/grouped-q8.cuh)
 - [Time to first token and 8K prefill](experiment-log.md#2026-11-21-time-to-first-token-and-8k-prefill) covers streaming timing and kernel profiles.
+- [Q4_0 versus Q8_0 KV cache](experiment-log.md#2026-11-22-q4_0-versus-q8_0-kv-cache-at-8k) compares fresh 8K latency, decode, VRAM, and retrieval.
 - [Experiment log](experiment-log.md) records the full sequence of experiments and links their raw artifacts.
 
 ## Reference measurements and methods

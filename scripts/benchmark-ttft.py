@@ -14,7 +14,8 @@ import urllib.request
 
 from analyze_prefill import analyze
 from benchmark_ngram import CONTEXT_CAPACITY, measured_server, server_args
-from local_llama_server import local_server
+from local_llama_server import local_server, request
+from quality_score import score_response
 
 
 PROJECT = Path(__file__).resolve().parent.parent
@@ -26,9 +27,9 @@ MICROBATCH_SIZES = (128, 256, 512)
 NEW_TOKENS = 128
 
 
-def first_token(base, tokens, *, cached_tokens=0):
+def first_token(base, tokens, *, cached_tokens=0, output_tokens=1):
     payload = json.dumps({
-        "prompt": tokens, "n_predict": 1, "temperature": 0, "seed": 42,
+        "prompt": tokens, "n_predict": output_tokens, "temperature": 0, "seed": 42,
         "cache_prompt": bool(cached_tokens), "ignore_eos": True,
         "stream": True, "return_tokens": True,
     }).encode()
@@ -37,6 +38,8 @@ def first_token(base, tokens, *, cached_tokens=0):
     })
     first = None
     final = None
+    streamed_tokens = []
+    text_chunks = []
     started_utc = time.time_ns()
     started = time.perf_counter_ns()
     with urllib.request.urlopen(request, timeout=120) as response:
@@ -50,24 +53,30 @@ def first_token(base, tokens, *, cached_tokens=0):
             event = json.loads(payload)
             if "error" in event:
                 raise RuntimeError(event["error"])
-            if first is None and event.get("tokens") and not event.get("stop"):
-                first = (received - started, event["tokens"][0], event["content"])
             if event.get("stop"):
                 final = event
+            elif event.get("tokens"):
+                if first is None:
+                    first = (received - started, event["tokens"][0], event["content"])
+                streamed_tokens.extend(event["tokens"])
+                text_chunks.append(event["content"])
 
     if first is None or final is None:
         raise RuntimeError("The stream did not contain a token event and final timings.")
     timings = final["timings"]
     if (final["truncated"] or final["tokens_evaluated"] != len(tokens)
             or timings["prompt_n"] != len(tokens) - cached_tokens
-            or timings["cache_n"] != cached_tokens or timings["predicted_n"] != 1):
+            or timings["cache_n"] != cached_tokens or timings["predicted_n"] != output_tokens):
         raise RuntimeError(f"Unexpected request lengths: {timings}")
     elapsed, token, content = first
-    return {
+    measurement = {
         "ttft_ms": elapsed / 1e6, "server_timings": timings, "first_token": token,
         "first_content": content, "request_started_utc_ns": started_utc,
         "first_token_utc_ns": started_utc + elapsed,
     }
+    if output_tokens > 1:
+        measurement.update(streamed_tokens=streamed_tokens, text="".join(text_chunks))
+    return measurement
 
 
 def prompt_pair(archived, depth):
@@ -265,6 +274,97 @@ def compare_prefill_backends(dataset, result, root, archived, options):
         }
 
 
+def compare_kv(dataset, result, root, archived, _options):
+    executable = root / "build/llama-cuda/bin/llama-server.exe"
+    model = root / "models/Qwen3-8B-Q4_K_M.gguf"
+    tokens = archived["prose_summary"]
+    if len(tokens) != 8192:
+        raise RuntimeError("The timing fixture must have exactly 8,192 prompt tokens.")
+    batch, microbatch, warmup, repeats = 4096, 1024, 2048, 3
+    cache_types = ("q8_0", "q4_0")
+    dataset.update(prompt_tokens=len(tokens), batch=batch, microbatch=microbatch,
+                   warmup_prompt_tokens=warmup, measured_requests_per_session=repeats, output_tokens=NEW_TOKENS,
+                   prompt="Fresh archived 8,192-token project memo with greedy generation.")
+    dataset.pop("reused_prefix")
+    dataset["power_status"] = subprocess.check_output([
+        "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+        "(Get-CimInstance Win32_Battery).BatteryStatus",
+    ], text=True).strip()
+
+    for index, kv in enumerate((*cache_types, *reversed(cache_types)), start=1):
+        args = server_args(executable, model, "none", cache_type=kv, batch=batch, microbatch=microbatch)
+        session = {"kv_type": kv, "measurements": []}
+        dataset["sessions"].append(session)
+        log = result.with_name(f"{result.stem}-{index:02}-{kv}.log")
+        print(f"Timing session {index}: {kv}", flush=True)
+        with measured_server(args, log, None, session) as base:
+            first_token(base, tokens[:warmup])
+            for _ in range(repeats):
+                row = first_token(base, tokens, output_tokens=NEW_TOKENS)
+                session["measurements"].append(row)
+                print(f"  {row['ttft_ms']:.1f} ms TTFT, "
+                      f"{row['server_timings']['predicted_per_second']:.2f} tok/s decode", flush=True)
+
+        log_text = log.read_text(encoding="utf-8", errors="replace")
+        kv_buffer = re.search(r"\bCUDA0 KV buffer size\s*=\s*([\d.]+) MiB", log_text)
+        if (not kv_buffer or not re.search(rf"\bK \({kv}\): .* V \({kv}\):", log_text)
+                or not re.search(r"\bflash_attn\s*=\s*enabled", log_text)
+                or not re.search(rf"\bn_batch\s*=\s*{batch}\b", log_text)
+                or not re.search(rf"\bn_ubatch\s*=\s*{microbatch}\b", log_text)):
+            raise RuntimeError(f"Effective cache, Flash Attention or batch setting unconfirmed: inspect {log}")
+        session["cuda_kv_buffer_mib"] = float(kv_buffer[1])
+
+    summary = dataset["summary"] = {}
+    for kv in cache_types:
+        sessions = [s for s in dataset["sessions"] if s["kv_type"] == kv]
+        rows = [row for session in sessions for row in session["measurements"]]
+        ttft = [row["ttft_ms"] for row in rows]
+        decode = [row["server_timings"]["predicted_per_second"] for row in rows]
+        summary[kv] = {
+            "repetitions": len(rows), "median_ttft_ms": median(ttft), "ttft_range_ms": [min(ttft), max(ttft)],
+            "median_prefill_tokens_per_second": median(row["server_timings"]["prompt_per_second"] for row in rows),
+            "median_decode_tokens_per_second": median(decode), "decode_range_tokens_per_second": [min(decode), max(decode)],
+            "sampled_peak_vram_mib": max(s["sampled_peak_vram_mib"] for s in sessions),
+            "cuda_kv_buffer_mib": max(s["cuda_kv_buffer_mib"] for s in sessions),
+            "first_token_ids": sorted({row["first_token"] for row in rows}),
+            "distinct_completion_texts": len({row["text"] for row in rows}),
+        }
+
+    rows = [row for session in dataset["sessions"] for row in session["measurements"]]
+    dataset["all_completion_texts_match"] = len({row["text"] for row in rows}) == 1
+    complete_ids = all(len(row["streamed_tokens"]) == NEW_TOKENS for row in rows)
+    dataset["all_completion_token_ids_match"] = (
+        len({tuple(row["streamed_tokens"]) for row in rows}) == 1 if complete_ids else None
+    )
+
+    fixture = PROJECT / "results/quality-fixtures.json"
+    cases = [case for case in json.loads(fixture.read_text(encoding="utf-8")) if case["id"].startswith("retrieval_")]
+    dataset.update(retrieval_fixture=fixture.name, retrieval_sessions=[])
+    for kv in cache_types:
+        args = server_args(executable, model, "none", cache_type=kv, batch=batch, microbatch=microbatch)
+        session = {"kv_type": kv, "records": []}
+        dataset["retrieval_sessions"].append(session)
+        log = result.with_name(f"{result.stem}-retrieval-{kv}.log")
+        with measured_server(args, log, None, session) as base:
+            for case in cases:
+                messages = [
+                    {"role": "system", "content": "Answer accurately. Return only the requested JSON value, without markdown or explanation."},
+                    {"role": "user", "content": case["prompt"]},
+                ]
+                response = request(base, "/v1/chat/completions", {
+                    "messages": messages, "temperature": 0, "seed": 42, "max_tokens": NEW_TOKENS,
+                    "stream": False, "cache_prompt": False, "chat_template_kwargs": {"enable_thinking": False},
+                })
+                choice = response["choices"][0]
+                content = choice["message"]["content"] or ""
+                scores = score_response(content, case["expected"])
+                session["records"].append({
+                    "case": case["id"], "expected": case["expected"], "content": content, **scores,
+                    "usage": response["usage"], "finish_reason": choice["finish_reason"],
+                })
+                print(f"{kv} {case['id']}: {'PASS' if scores['correct'] else 'FAIL'}", flush=True)
+
+
 def profile(dataset, result, root, archived, options):
     batch, microbatch = (4096, 1024) if options.profile_fp8 else (512, options.microbatch)
     backends = ("stock", "fp8") if options.profile_fp8 else ("cublas" if options.cublas else "stock",)
@@ -330,10 +430,13 @@ def main():
                        help="Compare two microbatch sizes at the same logical batch on fresh 8K.")
     group.add_argument("--compare-cublas", action="store_true", help="Compare stock and forced cuBLAS at fresh 8K.")
     group.add_argument("--compare-fp8", action="store_true", help="Compare FP8 gate/up and stock integer prefill at fresh 8K.")
+    group.add_argument("--compare-kv", action="store_true", help="Compare stock Q8_0 and Q4_0 caches at fresh 8K.")
     group.add_argument("--profile-fp8", action="store_true", help="Trace stock and FP8 prefill at fresh 8K.")
     options = parser.parse_args()
     if options.cublas and not options.profile:
         parser.error("--cublas requires --profile. Use --compare-cublas for unprofiled timing.")
+    if options.compare_kv and options.kv:
+        parser.error("--compare-kv always runs both Q8_0 and Q4_0.")
     if options.compare_microbatches:
         batch, first, second = options.compare_microbatches
         if not (0 < min(first, second) < max(first, second) <= batch <= CONTEXT_CAPACITY):
@@ -359,6 +462,8 @@ def main():
         label, run = "ttft-cublas-8k", compare_prefill_backends
     elif options.compare_fp8:
         label, run = "ttft-fp8-8k", compare_prefill_backends
+    elif options.compare_kv:
+        label, run = "ttft-kv-compare-8k", compare_kv
     result = PROJECT / "results" / f"{label}-{stamp}.json"
     source_revision = subprocess.check_output(["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip()
     dataset = {
