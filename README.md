@@ -18,7 +18,7 @@ Speculation gains depend on how much text the draft can reuse. Several prose cas
 | Implementation | Source | Runtime integration |
 | --- | --- | --- |
 | Adaptive n-gram speculation | [Consensus backoff](benchmarks/ngram/consensus-backoff.inc), [ranked draft selection](benchmarks/ngram/ranked-draft.inc), [acceptance-based draft budget](benchmarks/ngram/acceptance-budget.inc) | [N-gram build script](scripts/build-adaptive-ngram.py) integrates the policies with llama.cpp’s `ngram-simple` path. |
-| Grouped Q8_0 decode attention | [CUDA kernel](benchmarks/attention/grouped-q8.cuh), [correctness and timing harness](benchmarks/attention/benchmark.cpp) | [Attention build script](scripts/build-attention-bench.py) adds a dispatch path for single-token decode on Ada with grouped-query attention. |
+| Grouped Q8_0 and Q4_0 decode attention | [CUDA kernel](benchmarks/attention/grouped-decode.cuh), [correctness and timing harness](benchmarks/attention/benchmark.cpp) | [Attention build script](scripts/build-attention-bench.py) adds cache-specific paths for single-token decode on Ada with grouped-query attention. |
 | Q4_K feed-forward kernels | [Decode microbenchmark](benchmarks/q4_k/benchmark.cu), [fused prefill tile-width harness](benchmarks/prefill-mmq/benchmark.cpp) | [Decode harness guide](docs/q4-k-benchmark.md), [prefill tile-width experiment](docs/experiment-log.md#2026-11-21-fused-q4_k-prefill-tile-width) |
 
 The build scripts use a separate, pinned llama.cpp checkout and generate the patched translation units and runtime DLLs locally. [Pinned llama.cpp revision](https://github.com/ggml-org/llama.cpp/tree/8bf88ba9368e70fe3ba1b0001b34e70ffc713716)

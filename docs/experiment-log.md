@@ -229,7 +229,7 @@ Repeating the same 4K KV pair reduced DRAM reads to 13.35 MiB on vector and 10.9
 
 ## 2026-11-21 Custom grouped Q8_0 decode attention
 
-The custom CUDA path handles batch-one decode on Ada, with 128-dimensional heads and four query heads per KV head. Both K and V use the pinned llama.cpp Q8_0 layout. The dispatcher requires compatible strides and a dense mask, and sends prefill, multi-token verification, and other shapes through the existing CUDA dispatcher. The experiment selects the new path through `LLM_OPT_ATTENTION_Q8=1`. [Kernel source](../benchmarks/attention/grouped-q8.cuh)
+The custom CUDA path handles batch-one decode on Ada, with 128-dimensional heads and four query heads per KV head. Both K and V use the pinned llama.cpp Q8_0 layout. The dispatcher requires compatible strides and a dense mask, and sends prefill, multi-token verification, and other shapes through the existing CUDA dispatcher. The experiment selects the new path through `LLM_OPT_ATTENTION_Q8=1`. [Kernel source](../benchmarks/attention/grouped-decode.cuh)
 
 Each block processes one KV head and one 128-position split. Four warps cooperate to stage each 32-position packed tile in shared memory, then each warp computes one query head. The QK dot product uses the stock temporary Q8_1 query quantization and packed DP4A instructions. Each warp maintains its own online softmax and accumulates the weighted Q8_0 values in FP32. A second kernel merges split partials using their maxima and normalization sums.
 
@@ -464,3 +464,30 @@ Sessions run Q8_0 → Q4_0 → Q4_0 → Q8_0. Each warms up on 2,048 tokens and 
 Q4_0 saved 297 MiB of KV allocation (47.1%) and 296 MiB of sampled peak device VRAM, increasing headroom from 687 to 983 MiB on the 6,141 MiB device. Median TTFT was 83 ms lower and decode was 0.08 tok/s higher. The ranges overlap for both timings. All 12 timing requests processed the full prompt with zero cached tokens and 37/37 layers on the GPU on AC power. [Raw timings, memory, and outputs](../results/ttft-kv-compare-8k-20261122T184000Z.json)
 
 Each format recovered all three codes from the 6,870-token retrieval prompts. Both formats matched the exact requested JSON value on two cases and returned the correct code inside a one-field object on the middle case. Each format repeated its own 128-token memo continuation exactly across all six runs. The continuations agreed through token five and diverged at token six. This screen covers three retrieval prompts and one prose prompt, so broader answer quality and maximum usable context remain unmeasured.
+
+## 2026-11-22 Grouped Q4_0 decode attention
+
+The Ada single-token kernel now has a Q4_0 specialization alongside Q8_0. Four warps share each packed K/V tile of 32 positions, with one warp per query head. A Q4_0 row is 72 bytes per head. The kernel extracts four-bit values from the packed bytes and uses the stock Q4_0 offset correction with packed integer dot products. Each warp computes its own softmax and accumulates its weighted values in FP32. Both formats share the split reduction. The Q4_0 specialization uses 48 registers per thread, 5,760 bytes of static shared memory per block, and zero local memory. [Kernel source](../benchmarks/attention/grouped-decode.cuh)
+
+The dispatcher selects the grouped path when both caches use Q4_0, the data layout is compatible, and a single query position attends to at least 4,096 KV rows. Stock Flash Attention handles prefill and other shapes. Both benchmark arms use the same CUDA DLL and packed Q4_0 cache. The baseline uses the stock vector path with the grouped option disabled.
+
+```powershell
+.\scripts\build-attention-bench.ps1
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-attention.py isolated --kv q4_0
+python .\scripts\benchmark-attention.py decode --kv q4_0
+.\scripts\run-model.ps1 -GroupedQ4Attention -Context 8448
+```
+
+The isolated test checks dense and masked inputs against a double-precision CPU reference. The masked case hides a full split and part of the last split. Timing rotates over eight KV pairs and reverses the configuration order. The full-model test uses the Qwen3 8B Q4_K_M checkpoint, 4,096/1,024 batch/microbatch, fresh code and prose prompts at 4K and 8K, and 128 greedy output tokens per request. Each cache allocation has 256 additional positions beyond the prompt. Speculation is disabled.
+
+| Prompt depth | Stock attention | Grouped attention | Stock decode | Grouped decode | Sampled peak VRAM in both arms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4K | 123.30 µs | 66.49 µs | 31.53 tok/s | 32.77 tok/s | 4,976 MiB |
+| 8K | 237.99 µs | 115.28 µs | 28.42 tok/s | 30.69 tok/s | 5,146 MiB |
+
+Isolated timings average two rotated session medians per path and depth. They include the reduction kernel. Both paths passed all reference checks, with maximum absolute error below `2.3e-8`. Decode values are medians of four requests per path and depth. At 8K, grouping cut isolated latency by 51.6% and increased decode by 8.0%. All 16 requests ran on AC with 37/37 GPU layers. [Isolated results](../results/attention-isolated-q4-20261122T185038Z.json) · [Full-model results](../results/attention-decode-q4-20261122T185045Z.json)
+
+The Python fixture matched all 128 generated token IDs at both depths. The prose memo diverged at token 42 at 4K and token 16 at 8K, with stable continuations across repeats within each path. The numerical checks cover the attention operation. These two prompts establish token agreement only for the Python fixture.
+
+The first isolated run stopped before measurement because Windows could not find the installed CUPTI DLL. The development shell now includes the toolkit's CUPTI directory. [Initial harness startup result](../results/attention-isolated-q4-20261122T185013Z.json)

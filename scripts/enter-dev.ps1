@@ -13,6 +13,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $toolkit 'bin\nvcc.exe'))) {
 $env:CUDA_PATH = $toolkit
 $env:CUDACXX = Join-Path $toolkit 'bin\nvcc.exe'
 $env:PATH = (Join-Path $projectRoot '.venv\Scripts') + ';' + (Join-Path $toolkit 'bin') + ';' + (Join-Path $toolkit 'bin\x64') + ';' + $env:PATH
+$cupti = Join-Path $toolkit 'lib\x64'
+if (Test-Path -LiteralPath (Join-Path $cupti 'cupti64_13.dll')) {
+    $env:PATH = $cupti + ';' + $env:PATH
+}
 foreach ($tool in @('nsight_compute', 'nsight_systems')) {
     $profilerRoot = Join-Path $workRoot "tools\$tool"
     if (Test-Path -LiteralPath $profilerRoot) {

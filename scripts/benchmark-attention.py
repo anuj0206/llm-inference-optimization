@@ -16,6 +16,7 @@ from benchmark_ngram import completion, measured_server, server_args
 GROUPED = {
     "f16": ("grouped_mma", "LLM_OPT_ATTENTION_MMA", "enabled grouped FP16 Tensor Core decode attention"),
     "q8_0": ("grouped_q8", "LLM_OPT_ATTENTION_Q8", "enabled custom grouped Q8_0 decode attention"),
+    "q4_0": ("grouped_q4", "LLM_OPT_ATTENTION_Q4", "enabled custom grouped Q4_0 decode attention"),
 }
 
 
@@ -46,13 +47,17 @@ def benchmark(options, candidate):
     build = json.loads((candidate / "build.json").read_text(encoding="utf-8"))
     if hashlib.sha256((bin_dir / "ggml-cuda.dll").read_bytes()).hexdigest() != build["experiment_cuda_sha256"]:
         raise RuntimeError("The experimental CUDA DLL changed after the build.")
+    if options.kv == "q4_0" and not build.get("grouped_q4_sha256"):
+        raise RuntimeError("Rebuild the attention runtime to enable grouped Q4_0.")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    label = f"attention-{options.measurement}" + ("-q8" if options.kv == "q8_0" else "")
+    label = f"attention-{options.measurement}" + (f"-{options.kv[:2]}" if options.kv != "f16" else "")
     result = project / "results" / f"{label}-{stamp}.json"
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     dataset = {"status": "running", "measurement": options.measurement, "kv_type": options.kv,
                "build": build, "sessions": []}
     if options.measurement == "decode":
+        batch, microbatch = (4096, 1024) if options.kv == "q4_0" else (512, 128)
+        dataset.update(batch=batch, microbatch=microbatch)
         fixture = project / "results/ngram-prose-8k-20261121T230013Z.json"
         archived = json.loads(fixture.read_text(encoding="utf-8"))["prompts"]
         prompts = {case: archived[case] for case in ("code_continuation", "prose_summary")}
@@ -77,7 +82,8 @@ def benchmark(options, candidate):
             print(f"{index}: {depth} {mode}", flush=True)
             if options.measurement == "decode":
                 args = server_args(bin_dir / "llama-server.exe", model, "none",
-                                   context_capacity=depth + 256, cache_type=options.kv)
+                                   context_capacity=depth + 256, cache_type=options.kv,
+                                   batch=batch, microbatch=microbatch)
                 row["measurements"] = []
                 with measured_server(args, log, environment, row) as base:
                     cases = list(prompts) if index <= len(schedule) else list(reversed(prompts))
@@ -86,6 +92,8 @@ def benchmark(options, candidate):
                         if depth != len(tokens):
                             tokens = tokens[:128] + tokens[-(depth - 128):]
                         measurement = completion(base, tokens, prompt_length=depth)
+                        if measurement["timings"]["cache_n"] != 0:
+                            raise RuntimeError("Decode comparison requires a fresh prompt.")
                         row["measurements"].append({"case": case, **measurement})
                         print(f"  {case}: {measurement['timings']['predicted_per_second']:.2f} tok/s", flush=True)
                 if (marker in log.read_text(encoding="utf-8", errors="replace")) != (mode == grouped):

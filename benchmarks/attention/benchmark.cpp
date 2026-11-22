@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -37,7 +38,9 @@ void cuda_check(cudaError_t status) {
 
 std::vector<float> attention_reference(int depth, const std::vector<float> & query,
                                        const std::vector<float> & key, const std::vector<float> & value,
-                                       const std::vector<ggml_fp16_t> & mask) {
+                                       const std::vector<ggml_fp16_t> & mask,
+                                       const std::vector<float> & q4_query_offsets,
+                                       const std::vector<float> & q4_key_scales) {
     std::vector<float> output(query.size());
     std::vector<double> scores(depth);
     for (int head = 0; head < query_heads; ++head) {
@@ -47,6 +50,9 @@ std::vector<float> attention_reference(int depth, const std::vector<float> & que
             const auto offset = (i * kv_heads + group) * head_dim;
             for (int d = 0; d < head_dim; ++d) {
                 dot += double(query[head * head_dim + d]) * key[offset + d];
+            }
+            for (int d = 0; d < head_dim && !q4_query_offsets.empty(); d += 32) {
+                dot += double(q4_query_offsets[(head * head_dim + d) / 32]) * q4_key_scales[(offset + d) / 32];
             }
             scores[i] = dot + ggml_fp16_to_fp32(mask[i]);
         }
@@ -68,18 +74,26 @@ std::vector<float> attention_reference(int depth, const std::vector<float> & que
     return output;
 }
 
-std::vector<float> reference_query(const std::vector<float> & query, bool q8) {
+std::vector<float> reference_query(const std::vector<float> & query, ggml_type type,
+                                   std::vector<float> & q4_offsets) {
     auto scaled = query;
     const float scale = 1.0f / std::sqrt(float(head_dim));
     for (auto & item : scaled) item *= scale;
-    if (q8) {
+    if (type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_0) {
         // Mirror the vector path's temporary Q8_1 query without a half-rounded block scale.
         for (std::size_t i = 0; i < scaled.size(); i += 32) {
             float peak = 0.0f;
             for (std::size_t j = i; j < i + 32; ++j) peak = std::max(peak, std::abs(scaled[j]));
             const float delta = peak / 127;
-            if (delta > 0.0f) {
-                for (std::size_t j = i; j < i + 32; ++j) scaled[j] = std::round(scaled[j] / delta) * delta;
+            float difference = 0.0f;
+            for (std::size_t j = i; j < i + 32; ++j) {
+                const float original = scaled[j];
+                scaled[j] = delta > 0.0f ? std::round(original / delta) * delta : 0.0f;
+                difference += scaled[j] - original;
+            }
+            if (type == GGML_TYPE_Q4_0) {
+                // The unsigned nibble offset is corrected using the pre-quantization query sum.
+                q4_offsets.push_back(8.0f * difference);
             }
         }
     }
@@ -210,14 +224,24 @@ json run(int depth, const std::string & mode, ggml_type type, bool counters) {
         ggml_backend_tensor_set(values[i], packed_v.data(), 0, packed_v.size());
     }
 
-    const auto scaled_query = reference_query(query, type == GGML_TYPE_Q8_0);
+    std::vector<float> q4_query_offsets, q4_key_scales;
+    if (type == GGML_TYPE_Q4_0) {
+        const auto block_bytes = ggml_type_size(type);
+        for (std::size_t i = 0; i < packed_k.size(); i += block_bytes) {
+            ggml_fp16_t scale;
+            std::memcpy(&scale, packed_k.data() + i, sizeof(scale));
+            q4_key_scales.push_back(ggml_fp16_to_fp32(scale));
+        }
+    }
+    const auto scaled_query = reference_query(query, type, q4_query_offsets);
     const auto check_attention = [&] {
         ggml_backend_tensor_set(mask, mask_values.data(), 0, ggml_nbytes(mask));
         attention_bench_launch(backend.get(), outputs.front());
         cuda_check(cudaStreamSynchronize(stream));
         std::vector<float> actual(query.size());
         ggml_backend_tensor_get(outputs.front(), actual.data(), 0, ggml_nbytes(outputs.front()));
-        const auto reference = attention_reference(depth, scaled_query, key, value, mask_values);
+        const auto reference = attention_reference(depth, scaled_query, key, value, mask_values,
+                                                   q4_query_offsets, q4_key_scales);
         double max_error = 0, error_sq = 0, reference_sq = 0;
         for (std::size_t i = 0; i < actual.size(); ++i) {
             if (!std::isfinite(actual[i])) {
@@ -229,7 +253,8 @@ json run(int depth, const std::string & mode, ggml_type type, bool counters) {
             reference_sq += double(reference[i]) * reference[i];
         }
         const double relative_rms = std::sqrt(error_sq / reference_sq);
-        if (max_error > 0.002 || relative_rms > 0.03) {
+        const double relative_tolerance = type == GGML_TYPE_Q4_0 ? 1e-4 : 0.03;
+        if (max_error > 0.002 || relative_rms > relative_tolerance) {
             throw std::runtime_error("Attention disagreed with the CPU reference. Max error " +
                                      std::to_string(max_error) + "; relative RMS " + std::to_string(relative_rms));
         }
@@ -241,7 +266,7 @@ json run(int depth, const std::string & mode, ggml_type type, bool counters) {
         {"logical_kv_bytes", packed_k.size() + packed_v.size()}, {"distinct_kv_pairs", layers},
         {"max_abs_error", dense.at("max_abs_error")}, {"relative_rms_error", dense.at("relative_rms_error")},
     };
-    if (type == GGML_TYPE_Q8_0) {
+    if (type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_0) {
         const auto masked = ggml_fp32_to_fp16(-INFINITY);
         std::fill_n(mask_values.begin() + 128, 128, masked);
         std::fill(mask_values.end() - 67, mask_values.end(), masked);
@@ -289,14 +314,23 @@ json run(int depth, const std::string & mode, ggml_type type, bool counters) {
 int main(int argc, char ** argv) {
     try {
         if (argc < 5 || argc > 6 || (argc == 6 && std::string(argv[5]) != "--counters")) {
-            throw std::runtime_error("Usage: attention-bench <output.json> <4096|8192> <path> <f16|q8_0> [--counters]");
+            throw std::runtime_error("Usage: attention-bench <output.json> <4096|8192> <path> <f16|q8_0|q4_0> [--counters]");
         }
         const auto depth = std::stoi(argv[2]);
         const std::string mode = argv[3];
         const std::string cache = argv[4];
-        const auto type = cache == "q8_0" ? GGML_TYPE_Q8_0 : GGML_TYPE_F16;
-        if ((depth != 4096 && depth != 8192) || (cache != "f16" && cache != "q8_0") ||
-                (mode != "vector" && mode != (type == GGML_TYPE_Q8_0 ? "grouped_q8" : "grouped_mma"))) {
+        ggml_type type = GGML_TYPE_F16;
+        const char * grouped = "grouped_mma";
+        if (cache == "q4_0") {
+            type = GGML_TYPE_Q4_0;
+            grouped = "grouped_q4";
+        } else if (cache == "q8_0") {
+            type = GGML_TYPE_Q8_0;
+            grouped = "grouped_q8";
+        } else if (cache != "f16") {
+            throw std::runtime_error("Use a supported KV cache format.");
+        }
+        if ((depth != 4096 && depth != 8192) || (mode != "vector" && mode != grouped)) {
             throw std::runtime_error("Use a tested depth and CUDA path.");
         }
         const auto result = run(depth, mode, type, argc == 6);
