@@ -336,7 +336,7 @@ python .\scripts\benchmark-ttft.py --sweep-microbatch
 
 Each setting has six measured requests. All 18 returned the same first token and used 37/37 GPU layers. The laptop ran on AC, and sampled session temperature peaks ranged from 62 to 75 °C. Microbatch 512 had the lowest median in every block. Its overall median was 0.77 s lower than the 128 baseline, a reduction of 11.2%, for another 58 MiB of sampled peak VRAM. That leaves 826 MiB of the reported 6,141 MiB on the device. The CUDA compute buffer grew from 45.07 MiB at 128 to 57.13 MiB at 256 and 112.26 MiB at 512. The experiment measures the setting's effect on one fresh 8K prompt, with first-token agreement as the output check. [Raw timings and session telemetry](../results/ttft-microbatch-8k-20261122T035931Z.json)
 
-Batch 512 and microbatch 512 are the baseline for subsequent TTFT measurements and prefill profiles.
+This sweep established batch 512 and microbatch 512 for the cuBLAS comparison and its prefill profiles.
 
 ## 2026-11-21 cuBLAS prefill comparison
 
@@ -418,3 +418,7 @@ python .\scripts\benchmark-ttft.py --compare-microbatches 4096 1024 2048
 | 2,048 | 5.621 s | 5.511–6.051 s | 1,459 tok/s | 5,680 MiB | 449.05 MiB |
 
 The 12 requests completed on AC with all 37 layers offloaded and the same first token. Microbatch 2,048 was slower in both orderings. It added 170 ms (3.1%) to median TTFT and used 226 MiB more sampled VRAM. Its peak left 461 MiB of the reported 6,141 MiB available. Microbatch 1,024 was the faster setting for this matched 8K comparison. [Raw timings and session telemetry](../results/ttft-microbatch-compare-8k-20261122T180050Z.json)
+
+### Selected fresh 8K TTFT configuration
+
+Use logical batch 4,096 and microbatch 1,024 (`-b 4096 -ub 1024`) for fresh 8K Q8_0 TTFT comparisons. Median TTFT fell from 7.181 s in the first stock run at 512/128 to 5.451 s at 4,096/1,024, a reduction of 1.730 s (24.1%). Both used the same prompt, model, Q8_0 K/V cache, and stock CUDA binaries. This compares separate benchmark sessions and includes changes to both batch sizes. [Original streaming baseline](../results/ttft-20261122T034508Z.json) · [Selected configuration](../results/ttft-microbatch-compare-8k-20261122T180050Z.json)
