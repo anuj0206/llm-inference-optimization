@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 from statistics import median
 import subprocess
 import time
@@ -20,6 +21,7 @@ PROJECT = Path(__file__).resolve().parent.parent
 FIXTURE = PROJECT / "results/ngram-prose-8k-20261121T230013Z.json"
 DEPTHS = (2048, 4096, 8192)
 KV_TYPES = ("q8_0", "f16")
+MICROBATCH_SIZES = (128, 256, 512)
 NEW_TOKENS = 128
 
 
@@ -122,6 +124,55 @@ def benchmark(dataset, result, root, archived, options):
     dataset["summary"] = timing_summary(dataset["sessions"], depths, cache_types)
 
 
+def sweep_microbatch(dataset, result, root, archived, options):
+    executable = root / "build/llama-cuda/bin/llama-server.exe"
+    model = root / "models/Qwen3-8B-Q4_K_M.gguf"
+    tokens = archived["prose_summary"]
+    kv = options.kv or "q8_0"
+    dataset.update({"prompt_tokens": len(tokens), "batch": 512, "microbatches": MICROBATCH_SIZES,
+                    "warmup_prompt_tokens": 2048, "measured_requests_per_session": 2})
+    dataset["prompt"] = "Archived 8,192-token project memo; each request processes the entire prompt."
+    dataset.pop("reused_prefix")
+
+    for block in range(len(MICROBATCH_SIZES)):
+        order = MICROBATCH_SIZES[block:] + MICROBATCH_SIZES[:block]
+        for microbatch in order:
+            args = server_args(executable, model, "none", cache_type=kv, microbatch=microbatch)
+            session = {"kv_type": kv, "block": block + 1, "microbatch": microbatch, "measurements": []}
+            dataset["sessions"].append(session)
+            log = result.with_name(f"{result.stem}-{block + 1}-{microbatch}.log")
+            with measured_server(args, log, None, session) as base:
+                first_token(base, tokens[:2048])
+                for _ in range(dataset["measured_requests_per_session"]):
+                    session["measurements"].append(first_token(base, tokens))
+
+            log_text = log.read_text(encoding="utf-8", errors="replace")
+            if not re.search(rf"\bn_ubatch\s*=\s*{microbatch}\b", log_text):
+                raise RuntimeError(f"Effective microbatch {microbatch} not confirmed: inspect {log}")
+            compute_buffer = re.search(r"\bCUDA0 compute buffer size\s*=\s*([\d.]+) MiB", log_text)
+            if compute_buffer:
+                session["cuda_compute_buffer_mib"] = float(compute_buffer[1])
+            timings = [row["ttft_ms"] for row in session["measurements"]]
+            print(f"Block {block + 1}, {kv} microbatch {microbatch}: "
+                  f"median {median(timings):.1f} ms, peak {session['sampled_peak_vram_mib']} MiB", flush=True)
+
+    summary = []
+    for microbatch in MICROBATCH_SIZES:
+        sessions = [session for session in dataset["sessions"] if session["microbatch"] == microbatch]
+        rows = [row for session in sessions for row in session["measurements"]]
+        ttft = [row["ttft_ms"] for row in rows]
+        summary.append({
+            "microbatch": microbatch, "repetitions": len(rows), "median_ttft_ms": median(ttft),
+            "min_ttft_ms": min(ttft), "max_ttft_ms": max(ttft),
+            "median_server_prompt_ms": median(row["server_timings"]["prompt_ms"] for row in rows),
+            "median_server_prompt_tokens_per_second": median(
+                row["server_timings"]["prompt_per_second"] for row in rows),
+            "sampled_peak_vram_mib": max(session["sampled_peak_vram_mib"] for session in sessions),
+            "first_token_ids": sorted({row["first_token"] for row in rows}),
+        })
+    dataset["summary"] = summary
+
+
 def profile(dataset, result, root, archived, options):
     executable = root / "build/llama-cuda/bin/llama-server.exe"
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
@@ -159,13 +210,18 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--depth", type=int, choices=DEPTHS)
     group.add_argument("--profile", action="store_true", help="Trace a fresh 8K request in Nsight Systems.")
+    group.add_argument("--sweep-microbatch", action="store_true", help="Sweep 128, 256, and 512 at fresh 8K.")
     options = parser.parse_args()
     root = Path(os.environ["LLM_OPT_ROOT"])
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     executable = root / "build/llama-cuda/bin/llama-server.exe"
     archived = json.loads(FIXTURE.read_text(encoding="utf-8"))["prompts"]
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    label = "prefill-profile-8k" if options.profile else "ttft"
+    label, run = "ttft", benchmark
+    if options.profile:
+        label, run = "prefill-profile-8k", profile
+    elif options.sweep_microbatch:
+        label, run = "ttft-microbatch-8k", sweep_microbatch
     result = PROJECT / "results" / f"{label}-{stamp}.json"
     source_revision = subprocess.check_output(["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip()
     dataset = {
@@ -182,7 +238,7 @@ def main():
         "sessions": [],
     }
     try:
-        (profile if options.profile else benchmark)(dataset, result, root, archived, options)
+        run(dataset, result, root, archived, options)
         dataset["status"] = "passed"
     except Exception as error:
         dataset.update(status="failed", error=str(error))

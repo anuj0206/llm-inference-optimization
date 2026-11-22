@@ -318,3 +318,20 @@ All 48 measured requests completed on AC with 37/37 layers offloaded. Q8_0 peake
 Each capture contained 2,304 Flash Attention launches before merge. The number matches 36 attention layers across 64 microbatches. Q8_0 ran 4,608 Q8_0-to-FP16 conversions because stock batched attention converts K and V for its FP16 matrix instructions. CUDA kernel and copy intervals covered 6.91 s of the 7.16 s Q8_0 trace window. The rest includes gaps between GPU operations and time at the request boundaries. Both traces confirmed 37/37 layers on the GPU. [Profile summary](../results/prefill-profile-8k-20261122T034837Z.json) · [Stock K/V conversion](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/ggml/src/ggml-cuda/fattn-common.cuh#L1084)
 
 The largest kernels are `mul_mat_q` for Q4_K weights. Sweep physical microbatch sizes at a fixed batch of 512 first to check whether larger matrix multiplies reduce fresh TTFT within the VRAM budget. Raw traces and SQLite exports are in `%LOCALAPPDATA%\LLMOptimization\profiles`.
+
+## 2026-11-21 8K prefill microbatch sweep
+
+The sweep varies the physical microbatch across 128, 256, and 512 at a fixed logical batch of 512. It uses the stock server, Qwen3 8B Q4_K_M, Q8_0 K and V, one 8,448-token slot, and Flash Attention. Each session warms up on 2,048 tokens, then measures two fresh 8,192-token requests on the archived project memo. The three blocks rotate microbatch order so each setting appears once in each position. The server logs confirm the effective microbatch and full CUDA layer offload. All requests time the first streamed token and verify that the server processed the full prompt with zero cached tokens.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-ttft.py --sweep-microbatch
+```
+
+| Microbatch | Median TTFT | TTFT range | Median prefill speed | Sampled peak VRAM |
+| ---: | ---: | ---: | ---: | ---: |
+| 128 | 6.815 s | 6.413–7.090 s | 1,203 tok/s | 5,257 MiB |
+| 256 | 6.407 s | 5.790–6.811 s | 1,280 tok/s | 5,257 MiB |
+| 512 | 6.048 s | 5.552–6.421 s | 1,359 tok/s | 5,315 MiB |
+
+Each setting has six measured requests. All 18 returned the same first token and used 37/37 GPU layers. The laptop ran on AC, and sampled session temperature peaks ranged from 62 to 75 °C. Microbatch 512 had the lowest median in every block. Its overall median was 0.77 s lower than the 128 baseline, a reduction of 11.2%, for another 58 MiB of sampled peak VRAM. That leaves 826 MiB of the reported 6,141 MiB on the device. The CUDA compute buffer grew from 45.07 MiB at 128 to 57.13 MiB at 256 and 112.26 MiB at 512. The experiment measures the setting's effect on one fresh 8K prompt, with first-token agreement as the output check. [Raw timings and session telemetry](../results/ttft-microbatch-8k-20261122T035931Z.json)
