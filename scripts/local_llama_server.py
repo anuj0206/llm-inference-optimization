@@ -17,7 +17,7 @@ def request(base, route, payload=None, *, decode_json=True):
 
 
 @contextmanager
-def local_server(args, log_path, *, environment=None):
+def local_server(args, log_path, *, environment=None, exit_timeout=None):
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -39,6 +39,8 @@ def local_server(args, log_path, *, environment=None):
                     raise RuntimeError(f"Server startup timed out: inspect {log_path}")
                 time.sleep(0.5)
             yield base, command
+            if exit_timeout is not None and server.wait(timeout=exit_timeout) != 0:
+                raise RuntimeError(f"Server wrapper exited with {server.returncode}: inspect {log_path}")
         finally:
             if server.poll() is None:
                 server.terminate()

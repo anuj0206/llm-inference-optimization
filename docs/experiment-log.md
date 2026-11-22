@@ -285,3 +285,36 @@ Values are mean decode tokens per second over two runs. All 36 requests complete
 Python accepted 96 draft tokens per request in every speculative arm. There was only one single-token pass out of 31 target passes. All modes produced identical Python tokens. The memo with grouped attention and ranked speculation had 54 single-token passes out of 80. It ran 3.4% faster than ranked alone and matched the stock output in both repeats. Ranked alone diverged at token 124 and feedback alone at token 120, so those comparisons include small differences in generated sequences.
 
 Grouped attention alone had the highest decode rate on fiction. The combined modes accepted only two drafts each. Grouped attention on fiction diverged from stock at token 36 in both repeats, including the attention-only mode. The overall experiment reports a token mismatch. The CLI smoke test confirmed grouped dispatch, n-gram initialization, and full GPU offload when both launch switches were set.
+
+## 2026-11-21 Time to first token and 8K prefill
+
+The client times the loopback HTTP request through the first streamed token event. The server is already loaded and processes a 512-token warmup before measured requests. The workload is the archived project memo. The shorter prompts retain its first 128 tokens and the tail. A fresh request starts with zero cached tokens. Its immediate follow-up keeps the prefix in the same server slot and replaces the last 128 tokens with the end of the archived freeform prompt. The benchmark checks the server's cached and processed token counts on every request.
+
+The baseline uses stock Qwen3 8B Q4_K_M on the RTX 4050 Laptop GPU, with FP16 or Q8_0 K and V, context capacity 8,448, one slot, Flash Attention enabled, batch 512, and microbatch 128. It alternates the order of prompt lengths and reverses the order of cache formats across sessions. Each result has four samples per cache format, depth, and reuse condition.
+
+The profile traces the same loopback server and fresh 8,192-token fixture with one generated token. `nsys` records individual CUDA graph nodes. The analyzer aligns the client's request and token timestamps with the trace clock, counts attention launches to validate the window, and reports both summed kernel duration by family and the union of GPU kernel and copy intervals. The per-kernel timings come from instrumented runs. Use the unprofiled streaming benchmark for TTFT comparisons.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-ttft.py
+python .\scripts\benchmark-ttft.py --profile
+```
+
+| Prompt length | Q8_0 fresh TTFT | FP16 fresh TTFT | Q8_0 reused prefix | FP16 reused prefix |
+| --- | ---: | ---: | ---: | ---: |
+| 2,048 | 1,603 ms | 1,603 ms | 106 ms | 106 ms |
+| 4,096 | 3,436 ms | 3,441 ms | 118 ms | 110 ms |
+| 8,192 | 7,181 ms | 6,785 ms | 135 ms | 127 ms |
+
+All 48 measured requests completed on AC with 37/37 layers offloaded. Q8_0 peaked at 5,257 MiB and FP16 at 5,785 MiB. Fresh 8K Q8_0 TTFT ranged from 6.34 to 7.55 s. FP16 ranged from 6.16 to 7.29 s. The overlapping samples make the 8K cache-format timing difference uncertain. The server prompt timer accounts for roughly 7.10 s of the 7.18 s Q8_0 median at 8K. Prefix reuse cuts the model's work to 128 input tokens, with 8,064 tokens supplied by the existing slot. [Streaming timings](../results/ttft-20261122T034508Z.json)
+
+| CUDA kernel family | Q8_0 time | Q8_0 share | FP16 time | FP16 share |
+| --- | ---: | ---: | ---: | ---: |
+| Quantized matrix multiplication and activation preparation | 5,064 ms | 73.5% | 5,076 ms | 78.1% |
+| Flash Attention and its merge | 1,121 ms | 16.3% | 1,100 ms | 16.9% |
+| Q8_0 to FP16 conversion | 260 ms | 3.8% | 0 ms | 0.0% |
+| Row writes and other kernels | 449 ms | 6.5% | 323 ms | 5.0% |
+
+Each capture contained 2,304 Flash Attention launches before merge. The number matches 36 attention layers across 64 microbatches. Q8_0 ran 4,608 Q8_0-to-FP16 conversions because stock batched attention converts K and V for its FP16 matrix instructions. CUDA kernel and copy intervals covered 6.91 s of the 7.16 s Q8_0 trace window. The rest includes gaps between GPU operations and time at the request boundaries. Both traces confirmed 37/37 layers on the GPU. [Profile summary](../results/prefill-profile-8k-20261122T034837Z.json) · [Stock K/V conversion](https://github.com/ggml-org/llama.cpp/blob/8bf88ba9368e70fe3ba1b0001b34e70ffc713716/ggml/src/ggml-cuda/fattn-common.cuh#L1084)
+
+The largest kernels are `mul_mat_q` for Q4_K weights. Sweep physical microbatch sizes at a fixed batch of 512 first to check whether larger matrix multiplies reduce fresh TTFT within the VRAM budget. Raw traces and SQLite exports are in `%LOCALAPPDATA%\LLMOptimization\profiles`.
