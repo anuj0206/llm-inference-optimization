@@ -402,3 +402,19 @@ python .\scripts\benchmark-ttft.py --sweep-large-microbatch
 | 3,072 / 1,024 | 5.676 s | 5.451–5.883 s | 1,447 tok/s | 5,454 MiB |
 
 All 16 requests completed on AC with 37/37 GPU layers and the same first token. Session temperature peaks ranged from 63 to 74 °C. At a logical batch of 3,072, both larger microbatches beat 512 in each pass. Width 768 saved 109 ms in the overall median for 60 MiB more sampled VRAM. Width 1,024 saved another 27 ms for 70 MiB more, with overlapping timing ranges and a different ordering between the two passes. For this 8K prompt, 768 offers nearly all the measured latency gain. [Raw timings and session telemetry](../results/ttft-large-microbatch-8k-20261122T175409Z.json)
+
+## 2026-11-22 Prefill microbatch 1,024 versus 2,048
+
+The comparison fixes the logical batch at 4,096, a multiple of both microbatch sizes. It uses the same stock runtime, fresh 8,192-token memo, 8,448-token context capacity, and Q8_0 K and V as the previous sweep. After a 2,048-token warmup, each session measures three fresh requests. The two passes reverse configuration order.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-ttft.py --compare-microbatches 4096 1024 2048
+```
+
+| Microbatch | Median TTFT | TTFT range | Median prefill speed | Sampled peak VRAM | CUDA compute buffer |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1,024 | 5.451 s | 5.398–5.892 s | 1,505 tok/s | 5,454 MiB | 224.53 MiB |
+| 2,048 | 5.621 s | 5.511–6.051 s | 1,459 tok/s | 5,680 MiB | 449.05 MiB |
+
+The 12 requests completed on AC with all 37 layers offloaded and the same first token. Microbatch 2,048 was slower in both orderings. It added 170 ms (3.1%) to median TTFT and used 226 MiB more sampled VRAM. Its peak left 461 MiB of the reported 6,141 MiB available. Microbatch 1,024 was the faster setting for this matched 8K comparison. [Raw timings and session telemetry](../results/ttft-microbatch-compare-8k-20261122T180050Z.json)

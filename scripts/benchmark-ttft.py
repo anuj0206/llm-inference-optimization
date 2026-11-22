@@ -131,17 +131,24 @@ def sweep_microbatch(dataset, result, root, archived, options):
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     tokens = archived["prose_summary"]
     kv = options.kv or "q8_0"
-    if options.sweep_large_microbatch:
+    if options.compare_microbatches:
+        batch, first, second = options.compare_microbatches
+        configurations = ((batch, first), (batch, second))
+    elif options.sweep_large_microbatch:
         # A common multiple of all three widths avoids short GPU chunks at logical-batch boundaries.
         configurations = ((512, 512), (3072, 512), (3072, 768), (3072, 1024))
+    else:
+        configurations = tuple((512, microbatch) for microbatch in MICROBATCH_SIZES)
+
+    if options.compare_microbatches or options.sweep_large_microbatch:
         orders = (configurations, configurations[::-1])
         dataset["batch_configurations"] = [{"batch": batch, "microbatch": microbatch}
                                             for batch, microbatch in configurations]
     else:
-        configurations = tuple((512, microbatch) for microbatch in MICROBATCH_SIZES)
         orders = tuple(configurations[i:] + configurations[:i] for i in range(len(configurations)))
         dataset.update(batch=512, microbatches=MICROBATCH_SIZES)
-    dataset.update(prompt_tokens=len(tokens), warmup_prompt_tokens=2048, measured_requests_per_session=2)
+    repeats = 3 if options.compare_microbatches else 2
+    dataset.update(prompt_tokens=len(tokens), warmup_prompt_tokens=2048, measured_requests_per_session=repeats)
     dataset["prompt"] = "Archived 8,192-token project memo; each request processes the entire prompt."
     dataset.pop("reused_prefix")
 
@@ -295,10 +302,16 @@ def main():
     group.add_argument("--sweep-microbatch", action="store_true", help="Sweep 128, 256, and 512 at fresh 8K.")
     group.add_argument("--sweep-large-microbatch", action="store_true",
                        help="Sweep 512, 768, and 1024 at fresh 8K with a matched control.")
+    group.add_argument("--compare-microbatches", nargs=3, type=int, metavar=("BATCH", "FIRST", "SECOND"),
+                       help="Compare two microbatch sizes at the same logical batch on fresh 8K.")
     group.add_argument("--compare-cublas", action="store_true", help="Compare stock and forced cuBLAS at fresh 8K.")
     options = parser.parse_args()
     if options.cublas and not options.profile:
         parser.error("--cublas requires --profile. Use --compare-cublas for unprofiled timing.")
+    if options.compare_microbatches:
+        batch, first, second = options.compare_microbatches
+        if not (0 < min(first, second) < max(first, second) <= batch <= CONTEXT_CAPACITY):
+            parser.error("Use two distinct positive microbatch sizes up to the logical batch and context capacity.")
     root = Path(os.environ["LLM_OPT_ROOT"])
     model = root / "models/Qwen3-8B-Q4_K_M.gguf"
     executable = root / "build/llama-cuda/bin/llama-server.exe"
@@ -312,6 +325,8 @@ def main():
         label, run = "ttft-microbatch-8k", sweep_microbatch
     elif options.sweep_large_microbatch:
         label, run = "ttft-large-microbatch-8k", sweep_microbatch
+    elif options.compare_microbatches:
+        label, run = "ttft-microbatch-compare-8k", sweep_microbatch
     elif options.compare_cublas:
         label, run = "ttft-cublas-8k", compare_cublas
     result = PROJECT / "results" / f"{label}-{stamp}.json"
