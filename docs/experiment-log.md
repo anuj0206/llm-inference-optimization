@@ -255,3 +255,33 @@ The launcher selects Q8_0 for both caches. The kernel becomes eligible when atte
 The isolated latencies average four rotated session medians per depth and path. Every grouped session was faster than every stock session at each depth. The maximum absolute error against the CPU reference was below 2.2e-8 across both kernels and mask cases. [First isolated run](../results/attention-isolated-q8-20261122T003735Z.json) · [Isolated repeat](../results/attention-isolated-q8-20261122T004109Z.json)
 
 The full-model comparison completed 16 requests on AC. All sessions reported 37/37 layers on CUDA and peak sampled VRAM was equal across paths at each depth, 4,933 MiB at 4K and 5,255 MiB at 8K. The decode gains were 3.6% and 5.3%, respectively. Both 8K fixtures and the 4K Python fixture matched greedy token IDs. At 4K the prose memo diverged at token 118 in both grouped runs. The CLI launcher also confirmed custom dispatch with a 4,629-token prompt and Q8_0 K and V. [Full-model results](../results/attention-decode-q8-20261122T003758Z.json)
+
+## 2026-11-21 Combined grouped Q8_0 attention and adaptive n-gram
+
+The combined runtime pairs the custom CUDA DLL with the adaptive n-gram host DLL. The preparation script checks their source revisions and verifies the hashes of both patched DLLs and their stock counterparts. Each benchmark arm uses the same executable and Qwen3 8B Q4_K_M weights. The experiment varies the attention dispatch and selects ordinary decode, ranked n-gram, or ranked n-gram with acceptance feedback.
+
+Each run uses 8,192 prompt tokens and 128 greedy output tokens, Q8_0 K and V, one 8,448-token slot, and no prompt reuse. The workloads are the archived Python continuation, project memo, and fiction opening. The return pass reverses mode and prompt order. Both n-gram policies use the same saved FP16 verification-cost table so that enabling grouped attention is the only configuration change between each pair of speculative modes.
+
+The grouped kernel applies to single-token passes. Multi-token verification batches use the stock dispatcher. A request's single-token pass count is 127 minus accepted draft tokens minus the number of verifications. The first output token comes from prefill, and the remaining output includes one target token per pass plus any accepted draft prefix.
+
+```powershell
+.\scripts\build-attention-bench.ps1
+.\scripts\build-adaptive-ngram.ps1 -Budget
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-combined.py
+.\scripts\run-model.ps1 -GroupedQ8Attention -AdaptiveNgram -Context 8448
+```
+
+The benchmark prepares the combined runtime. To prepare it without running the benchmark, use `python .\scripts\prepare_combined_runtime.py` after building its inputs. The combined launcher selects the ranked policy and Q8_0 cache.
+
+| Workload | Stock | Grouped attention | Ranked | Attention + ranked | Feedback | Attention + feedback |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Repetitive Python | 27.82 | 28.75 | 81.63 | 80.87 | 81.00 | 82.01 |
+| Project memo | 27.78 | 29.23 | 37.71 | 38.98 | 37.89 | 37.58 |
+| Fiction opening | 27.65 | 29.16 | 25.76 | 26.56 | 26.04 | 27.18 |
+
+Values are mean decode tokens per second over two runs. All 36 requests completed on AC and all sessions reported 37/37 CUDA layers and a sampled peak of 5,255 MiB. Sampled session temperature peaks ranged from 67 to 79 °C. [Raw tokens, timings, and pass counts](../results/attention-ngram-8k-20261122T031348Z.json)
+
+Python accepted 96 draft tokens per request in every speculative arm. There was only one single-token pass out of 31 target passes. All modes produced identical Python tokens. The memo with grouped attention and ranked speculation had 54 single-token passes out of 80. It ran 3.4% faster than ranked alone and matched the stock output in both repeats. Ranked alone diverged at token 124 and feedback alone at token 120, so those comparisons include small differences in generated sequences.
+
+Grouped attention alone had the highest decode rate on fiction. The combined modes accepted only two drafts each. Grouped attention on fiction diverged from stock at token 36 in both repeats, including the attention-only mode. The overall experiment reports a token mismatch. The CLI smoke test confirmed grouped dispatch, n-gram initialization, and full GPU offload when both launch switches were set.
