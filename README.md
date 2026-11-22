@@ -1,207 +1,64 @@
 # Hardware-Constrained LLM Inference Optimization
 
-**Returning to the project? Start with the [documentation index](docs/README.md), [concept refresher](docs/concepts.md), and [experiment log](docs/experiment-log.md).**
+A CUDA performance project for running **Qwen3 8B Q4_K_M on a 6 GB NVIDIA RTX 4050 Laptop GPU**. Experiments use a pinned llama.cpp build to measure time to first token, generation throughput, and GPU memory use as the key/value (KV) cache grows.
 
-Optimize local LLM inference on an RTX 4050 Laptop GPU with a 6 GB VRAM budget. Use llama.cpp, C++ and CUDA to investigate quantized kernels and KV-cache memory efficiency.
+## Selected results
 
-## Scope
+| Experiment | Measured result | Workload |
+| --- | --- | --- |
+| [Ranked n-gram speculation](docs/experiment-log.md#2026-11-21-verification-scores-and-acceptance-based-draft-budget) | 28.94 → **99.60 tok/s** | Repetitive Python continuation at 8K with FP16 KV |
+| [Grouped Q8_0 CUDA attention](docs/experiment-log.md#2026-11-21-custom-grouped-q8_0-decode-attention) | 237.36 → **169.72 µs** isolated attention latency, and 28.54 → **30.05 tok/s** full-model decode | 8K context with Q8_0 KV in both arms |
+| [Q8_0 KV cache](docs/experiment-log.md#2026-11-21-time-to-first-token-and-8k-prefill) | 5,785 → **5,257 MiB** sampled peak VRAM | FP16 versus Q8_0 K and V with an 8,448-token context allocation |
+| [Prefill microbatch tuning](docs/experiment-log.md#2026-11-21-8k-prefill-microbatch-sweep) | 6.815 → **6.048 s** median time to first token | Fresh 8K prompt, microbatch 128 → 512, batch fixed at 512 |
 
-- Development model: Qwen3 4B.
-- Target model: Qwen3 8B at Q4 or Q3 precision, subject to measured memory use and quality.
-- Establish stock llama.cpp baselines before changing kernels.
-- Compare the same quantized model on stock and modified runtimes to isolate kernel improvements.
-- Compare precision levels separately; FP16 baselines may require a smaller model or CPU offload. Record offload explicitly.
+Speculation gains depend on how much text the draft can reuse. Several prose cases produced different greedy continuations. The [combined benchmark](docs/experiment-log.md#2026-11-21-combined-grouped-q8_0-attention-and-adaptive-n-gram) reports per-workload speed, draft acceptance, and token agreement.
 
-Track prefill/decode tokens per second, time to first token, peak dedicated VRAM, kernel latency, and quality on a fixed evaluation set. Record model hash, runtime commit, build flags, context length, cache precision, GPU offload, repetitions, and laptop power/thermal conditions with results. System RAM fallback does not count as fitting within dedicated VRAM.
+## Source code
 
-## Offline setup
+| Implementation | Source | Runtime integration |
+| --- | --- | --- |
+| Adaptive n-gram speculation | [Consensus backoff](benchmarks/ngram/consensus-backoff.inc), [ranked draft selection](benchmarks/ngram/ranked-draft.inc), [acceptance-based draft budget](benchmarks/ngram/acceptance-budget.inc) | [N-gram build script](scripts/build-adaptive-ngram.py) integrates the policies with llama.cpp’s `ngram-simple` path. |
+| Grouped Q8_0 decode attention | [CUDA kernel](benchmarks/attention/grouped-q8.cuh), [correctness and timing harness](benchmarks/attention/benchmark.cpp) | [Attention build script](scripts/build-attention-bench.py) adds a dispatch path for single-token decode on Ada with grouped-query attention. |
+| Q4_K feed-forward kernels | [Decode microbenchmark](benchmarks/q4_k/benchmark.cu), [fused prefill tile-width harness](benchmarks/prefill-mmq/benchmark.cpp) | [Decode harness guide](docs/q4-k-benchmark.md), [prefill tile-width experiment](docs/experiment-log.md#2026-11-21-fused-q4_k-prefill-tile-width) |
 
-From PowerShell in this directory:
+The build scripts use a separate, pinned llama.cpp checkout and generate the patched translation units and runtime DLLs locally. [Pinned llama.cpp revision](https://github.com/ggml-org/llama.cpp/tree/8bf88ba9368e70fe3ba1b0001b34e70ffc713716)
 
-```powershell
-.\scripts\setup-offline.ps1
-.\.venv\Scripts\python.exe .\scripts\check_environment.py
-```
+## Build and run on Windows
 
-The setup uses the installed Python, creates an isolated environment without pip or third-party packages, and saves an ignored local machine report. It does not download software or change global settings. Activation is optional; use the environment's Python path directly.
-
-## Initial machine audit — November 19, 2026
-
-| Component | Status |
-| --- | --- |
-| GPU | NVIDIA RTX 4050 Laptop GPU; 6141 MiB reported; compute capability 8.9 |
-| NVIDIA driver | 582.05; GPU visible through nvidia-smi |
-| CPU / RAM | Intel Core Ultra 9 185H / approximately 32 GB |
-| Git / Python / uv | Installed; Python 3.13 used for offline scripts |
-| C++ | Visual Studio Build Tools 2026, MSVC 14.51; Windows SDK 10.0.26100.0 |
-| CMake / Ninja | Not found in PATH or the usual Visual Studio CMake locations |
-| CUDA Toolkit / profilers | nvcc, Nsight Systems and Nsight Compute not found in checked locations/PATH |
-| llama.cpp / model weights | Deferred |
-
-An NVIDIA driver is present, but that does not supply the CUDA compiler. CUDA Toolkit and MSVC/driver compatibility still need verification before choosing installer versions.
-
-## Continue on home Wi-Fi
-
-1. Choose a CUDA Toolkit compatible with the installed NVIDIA driver and a supported MSVC host compiler. Add a supported compiler toolset if needed. Avoid forcing unsupported compiler versions.
-2. Install CMake and Ninja (or the Visual Studio CMake tools); install CUDA development tools. Add Nsight profilers when needed.
-3. Clone llama.cpp into `external/llama.cpp`, record its commit, and preserve a stock baseline before modifications.
-4. In a compatible Visual Studio developer shell, configure and build CUDA inference using the upstream instructions. Typical commands, to verify against the selected revision:
-
-   ```powershell
-   cmake -S external/llama.cpp -B build/llama-cuda -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89
-   cmake --build build/llama-cuda --parallel 4
-   ```
-
-5. Download only the first development model: Qwen3 4B GGUF Q4_K_M, with its source revision, license and SHA-256 recorded. Expect multiple GB. Add 8B and other precisions after the baseline works.
-6. Verify CUDA backend loading and actual GPU offload, then collect repeated stock benchmarks after warmup. Start with a short context and increase it while measuring memory.
-
-Use a directory outside OneDrive for large models, build trees, and profiler traces if possible; pass their absolute paths to tools. No PyTorch, Conda, Docker image or separate Linux distribution is required for this initial native Windows plan. Revisit the platform choice if profiler/toolchain constraints warrant it.
-
-Upstream references: [llama.cpp build instructions](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md), [CUDA Windows installation guide](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/).
-
-## Layout
-
-- `scripts/`: offline setup and environment inspection.
-- `results/`: benchmark artifacts; local environment reports are ignored.
-- `external/`, `build/`, `models/`: ignored locations for future source, build output and weights.
-
-## Native Windows development environment
-
-The online setup uses user-local files under `%LOCALAPPDATA%\LLMOptimization`, outside OneDrive. The installed NVIDIA display driver is retained. CUDA 13.5 supports the existing MSVC 19.51 compiler; this build targets native `sm_89` code for the RTX 4050, allowing execution under CUDA 13.x minor-version compatibility rather than relying on newer PTX JIT support. New toolkit features or profiling may still require a newer driver.
-
-To open a development shell and build:
-
-```powershell
-. .\scripts\enter-dev.ps1
-.\scripts\verify-cuda.ps1
-.\scripts\build-llama.ps1
-.\scripts\run-model.ps1
-```
-
-The shell setup applies to the current PowerShell process. It supplies MSVC, CUDA, CMake, Ninja and installed profiler paths without modifying global PATH.
-
-To reproduce the downloads on another Windows machine with compatible Visual Studio Build Tools and an NVIDIA driver:
+From this repository’s root in PowerShell, use Git, Python 3.13, `uv`, Visual Studio Build Tools with the x64 C++ toolset and Windows SDK, and a compatible NVIDIA driver. The project build targets native CUDA `sm_89` and was validated with CUDA 13.5 and MSVC 19.51. [Tested environment](results/setup-validation.md)
 
 ```powershell
 .\scripts\setup-offline.ps1
 uv pip install --python .venv\Scripts\python.exe -r requirements-dev.txt
-.\.venv\Scripts\python.exe scripts\install_cuda.py --profilers
+.\.venv\Scripts\python.exe .\scripts\install_cuda.py
 git clone https://github.com/ggml-org/llama.cpp.git "$env:LOCALAPPDATA\LLMOptimization\llama.cpp"
 git -C "$env:LOCALAPPDATA\LLMOptimization\llama.cpp" checkout 8bf88ba9368e70fe3ba1b0001b34e70ffc713716
-.\.venv\Scripts\python.exe scripts\download_model.py
+.\.venv\Scripts\python.exe .\scripts\download_model.py --size 8B
 .\scripts\build-llama.ps1
-```
-
-CUDA archives and model weights are checked against publisher SHA-256 values. The model's source revision, size, hash and license are saved beside the weights. The CUDA manifest and component licenses are retained in the toolkit directory. The build disables HTTPS support; use the download script for remote models and local paths for inference.
-
-This is an environment validation, not a controlled performance baseline. Final benchmark comparisons need fixed workload settings, warmup, repeated runs, power/thermal controls and a quality evaluation.
-
-See [the validation record](results/setup-validation.md) for verified tools and remaining profiler permissions.
-
-## Qwen3 8B target and repeatable benchmarks
-
-Qwen3 8B Q4_K_M is the primary optimization target. Keep Qwen3 4B Q4_K_M as the smaller reference model. Download the pinned 8B release and run it with:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\download_model.py --size 8B
 .\scripts\run-model.ps1 -ModelSize 8B
 ```
 
-`run-model.ps1` now defaults to 8B; pass `-ModelSize 4B` for the development model.
+The CUDA components and GGUF weights require several gigabytes of downloads. The scripts verify their SHA-256 hashes and store the toolkit, model, and build under `%LOCALAPPDATA%\LLMOptimization`. The model downloader also supports `--size 4B` for the smaller reference model. Pass `--profilers` to the CUDA installer to include Nsight Systems and Nsight Compute.
 
-### N-gram speculative decoding
+### Run the custom runtime
 
-Pass `-NgramSpeculation` to try llama.cpp's prompt and history lookup with the existing model. The experiment matches six prior tokens and can propose up to eight following tokens for the target model to verify. Drafting uses the local token history.
-
-```powershell
-.\scripts\run-model.ps1 -ModelSize 8B -Context 8448 -NgramSpeculation
-.\scripts\benchmark-ngram.ps1
-```
-
-The benchmark compares stock and `ngram-simple` on a repetitive Python continuation and a prose response to the project notes. Both use exactly 8,192 input tokens, 128 generated tokens, greedy sampling, FP16 KV cache and one CUDA-offloaded server slot. Prompt reuse is disabled. The server sessions run stock, speculative, speculative, then stock, and the second half reverses the prompt order. Results record decode throughput, draft and acceptance counts, sampled peak VRAM and the generated token IDs for comparison. Local logs record the server output and GPU samples. See the [first comparison](docs/experiment-log.md#2026-11-21-n-gram-speculative-decoding).
-
-To try the consensus-backoff variant, first build its separate runtime against the pinned stock CUDA build:
+The attention harness requires the CUDA CUPTI component. This sequence builds both variants and runs one prompt through grouped Q8_0 attention with ranked n-gram speculation.
 
 ```powershell
-.\scripts\build-adaptive-ngram.ps1
-.\scripts\run-model.ps1 -ModelSize 8B -Context 8448 -AdaptiveNgram
-.\scripts\benchmark-ngram.ps1 -Adaptive
+.\.venv\Scripts\python.exe .\scripts\install_cuda.py --components cuda_cupti
+.\scripts\build-attention-bench.ps1
+.\scripts\build-adaptive-ngram.ps1 -Budget
+. .\scripts\enter-dev.ps1
+python .\scripts\prepare_combined_runtime.py
+.\scripts\run-model.ps1 -Context 8448 -GroupedQ8Attention -AdaptiveNgram
 ```
 
-The adaptive mode keeps the fixed lookup for long matches and uses historical agreement to extend shorter drafts. Its build recompiles the n-gram host object and relinks the common DLL alongside copies of the existing CUDA runtime and executables. The comparison adds the adaptive runtime and a held-out prose prompt. See the [runtime notes](docs/experiment-log.md#2026-11-21-adaptive-n-gram-runtime).
-
-With the laptop plugged in and other GPU applications closed, benchmark each model sequentially:
+### Reproduce the comparisons
 
 ```powershell
-.\scripts\benchmark.ps1 -ModelSize 4B
-.\scripts\benchmark.ps1 -ModelSize 8B
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-combined.py
+python .\scripts\benchmark-ttft.py --sweep-microbatch
 ```
 
-Each invocation runs 512- and 2048-token prompt processing plus separate 128-token generation tests, with five repetitions after default warmup. Settings are eight CPU threads, batch 512, microbatch 128, Flash Attention on, FP16 K/V cache and 99 requested GPU layers. The verbose log records actual GPU offload. The scripts capture device-wide GPU memory, temperature, utilization, power and clocks every 200 ms and save timestamped JSON, CSV, metadata and local logs under `results/`. Sampling can miss brief allocation peaks. These short synthetic tests do not measure time to first token, model quality or long-context generation speed.
-
-The benchmark wrapper checks power state and requires an explicit `-AllowBattery` flag for a battery-powered run. Results from different power states should be compared separately. The pinned model revision and SHA-256 are saved in model-specific manifests alongside the weights.
-
-## Context-depth experiment
-
-Measure how generation changes as the KV cache fills:
-
-```powershell
-.\scripts\context-sweep.ps1 -ModelSize 8B
-.\scripts\show-context-results.ps1 -ModelSize 8B
-```
-
-The default sweep runs sequentially at populated context depths 0, 512, 1024, 2048 and 4096 tokens. Each point generates 128 tokens five times, with the same Q4_K_M weights, FP16 K/V cache, Flash Attention and batch settings as the baseline. llama-bench's `-d` prefill and context-state restoration happen outside the generation timer. This isolates decode speed after a populated prefix; it does not measure time to first token. The prefix is a synthetic benchmark workload, not a quality evaluation or a real conversation.
-
-Each point runs in its own process and saves `context-8b-q4-d<depth>-<UTC timestamp>` artifacts. Metadata records actual allocated context length and the runtime's CUDA KV-cache buffer size. The allocation accommodates depth plus 128 generated tokens and runtime rounding, so allocated tokens can exceed the populated depth. Device-wide memory sampling includes model loading, prefix processing, cache restoration and generation; the reported peak is not generation-only or an allocator-exact peak. The result viewer shows all completed points, including repeats, with UTC timestamps and power state.
-
-Keep the laptop on AC power and avoid concurrent GPU applications or benchmarks. Inspect sampled peak memory, actual GPU offload in the logs, temperatures, and throughput variability before extending the sweep. A sudden speed collapse near capacity can indicate memory pressure or fallback and warrants investigation. A default-warmup short sweep does not establish thermal steady-state performance. The script stops if a run fails; it retains the failure log and preceding completed results.
-
-To run one point, or extend to a longer depth after inspecting headroom:
-
-```powershell
-.\scripts\benchmark.ps1 -ModelSize 8B -ContextDepth 2048
-.\scripts\context-sweep.ps1 -ModelSize 8B -Depths 8192
-```
-
-The context-depth path was initially verified at depth 512 on AC power: 37/37 reported layers offloaded to CUDA, allocated context 768 tokens, CUDA KV cache 108 MiB, sampled peak device memory 4753 MiB, and 36.37 +/- 0.26 generated tokens/sec across five repetitions. Completed forward/reverse sweeps and subsequent experiments are recorded below.
-
-## First cache and profiling experiments
-
-The forward and reverse FP16 sweeps are now saved, including a successful 8K run. See [the optimization screen](results/optimization-screen.md) for the FP16/Q8 comparison, profile analysis and output regression checks.
-
-```powershell
-.\scripts\cache-compare.ps1
-.\scripts\profile-decode.ps1 -ContextDepth 0
-.\scripts\profile-decode.ps1 -ContextDepth 8192
-.\.venv\Scripts\python.exe scripts\analyze-profiles.py
-.\scripts\quality-check.ps1
-```
-
-Profiles are diagnostic and include overhead; the analyzer selects repeated decode graphs to exclude loading and prefill. The fixed profile-graph selection is validated for the recorded stock build and should be reviewed for another revision or workload. CUDA traces and SQLite exports stay outside OneDrive. The quality screen scores answer content and requested JSON formatting separately, retains raw outputs, and includes only 12 easy tasks; it is not a broad accuracy evaluation.
-
-For an individual Q8-cache run:
-
-```powershell
-.\scripts\benchmark.ps1 -ModelSize 8B -ContextDepth 8192 -CacheType q8_0
-.\scripts\run-model.ps1 -ModelSize 8B -Context 8192 -CacheType q8_0
-```
-
-The default cache remains FP16. `context-sweep.ps1` also accepts `-CacheType q8_0`. Filenames distinguish quantized-cache runs, and the result viewer includes the cache type.
-
-## Q4_K kernel investigation
-
-The first concrete kernel target is the fused feed-forward up/gate/SwiGLU operation: two Q4_K matrices, each with 12288 output rows and 4096 input columns, processing one token. Its observed mean kernel latency is about 308 microseconds, and it accounts for about 41.3% of selected short-context GPU kernel time. See [the investigation and microbenchmark specification](docs/q4-k-investigation.md) and [the detailed tensor/launch inventory](results/q4-k-investigation.json).
-
-The investigation is read-only. No runtime/kernel change or speedup is claimed. Reproduce it with `.\.venv\Scripts\python.exe scripts\inspect-q4-k.py`.
-
-## Isolated Q4_K correctness/performance harness
-
-The project-owned harness now isolates the stock fused feed-forward operation and gates timing on numerical checks. It tests real layers plus adversarial packed weights against a scalar-decoding, double-accumulation CPU reference and an unfused GPU control. Timing uses CUDA events for prepared and quantization-inclusive paths, with one-pair reuse and all-36-layer rotation.
-
-```powershell
-.\scripts\build-q4-bench.ps1
-.\scripts\run-q4-bench.ps1
-.\.venv\Scripts\python.exe scripts\summarize-q4-bench.py
-```
-
-Read the [harness guide](docs/q4-k-benchmark.md) for commands, source provenance, tolerance formulas, timing methodology and limitations. The [latest result summary](results/q4-microbench-summary.md) links timestamped raw data. The stock runtime remains unchanged and this harness does not claim a new optimization.
+See the [documentation index](docs/README.md) for individual benchmarks and profiling workflows. The [experiment log](docs/experiment-log.md) links the raw results, records the workload and runtime settings, and includes slower variants and output mismatches. [Third-party notices](benchmarks/q4_k/THIRD_PARTY_NOTICES.md)

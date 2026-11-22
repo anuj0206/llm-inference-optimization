@@ -1,16 +1,32 @@
-# Project reading guide
+# Documentation
 
-Start here when returning to the project. The main question is how much useful LLM capability and speed we can retain on an RTX 4050 Laptop GPU with 6 GB dedicated VRAM.
+These references cover the experimental code, benchmark methods, and results for running Qwen3 on an RTX 4050 Laptop GPU with 6 GB of dedicated VRAM.
 
-## Read in this order
+## Implementation and experiments
 
-1. [Project overview and commands](../README.md): hardware, environment, downloads, baseline and context commands.
-2. [Concept refresher](concepts.md): model size, weight precision, cache precision, prefill, decode and kernel timing.
-3. [Experiment log](experiment-log.md): what we measured, what it established, and the next question.
-4. [8B baseline](../results/qwen3-8b-baseline.md): matched 4B/8B speed and memory measurements.
-5. [Cache and profiling screen](../results/optimization-screen.md): FP16 versus Q8 cache, profile breakdown and limited output checks.
-6. [Kernel investigation](q4-k-investigation.md): exact Q4_K decode path, model shapes and first target.
-7. [Isolated harness guide](q4-k-benchmark.md): correctness references, timing methods, commands and limitations.
+- [Project overview and setup](../README.md) lists selected results, source code, and build commands.
+- [Adaptive n-gram speculation](experiment-log.md#2026-11-21-verification-scores-and-acceptance-based-draft-budget) covers draft ranking, acceptance feedback, and output checks. [Policy source](../benchmarks/ngram)
+- [Grouped Q8_0 attention](experiment-log.md#2026-11-21-custom-grouped-q8_0-decode-attention) describes the custom decode kernel, isolated timing, and full-model comparison. [Kernel source](../benchmarks/attention/grouped-q8.cuh)
+- [Time to first token and 8K prefill](experiment-log.md#2026-11-21-time-to-first-token-and-8k-prefill) covers streaming timing and kernel profiles.
+- [Experiment log](experiment-log.md) records the full sequence of experiments and links their raw artifacts.
+
+## Reference measurements and methods
+
+- [Inference concepts](concepts.md) explains model size, weight precision, cache precision, prefill, and decode.
+- [8B baseline](../results/qwen3-8b-baseline.md) compares 4B and 8B speed and memory use.
+- [Cache and profiling experiments](../results/optimization-screen.md) report FP16 and Q8 cache results, kernel profiles, and limited output checks.
+- [Q4_K kernel investigation](q4-k-investigation.md) identifies the decode path and model tensor shapes.
+- [Isolated Q4_K harness](q4-k-benchmark.md) documents correctness references, timing methods, and commands.
+
+## Benchmark entry points
+
+| Measurement | Script |
+| --- | --- |
+| Stock prompt processing and generation | [`benchmark.ps1`](../scripts/benchmark.ps1) |
+| Decode speed and VRAM by context depth | [`context-sweep.ps1`](../scripts/context-sweep.ps1), [`show-context-results.ps1`](../scripts/show-context-results.ps1) |
+| Adaptive speculation and grouped attention | [`benchmark-combined.py`](../scripts/benchmark-combined.py) |
+| Live time to first token and 8K prefill tracing | [`benchmark-ttft.py`](../scripts/benchmark-ttft.py) |
+| Decode CUDA traces and kernel breakdown | [`profile-decode.ps1`](../scripts/profile-decode.ps1), [`analyze-profiles.py`](../scripts/analyze-profiles.py) |
 
 Raw machine-readable measurements are under `results/`. Timestamped files preserve separate runs rather than replacing older evidence. Heavy weights, toolchains, compiled output and full profiler captures live under `%LOCALAPPDATA%\LLMOptimization`, outside OneDrive, and are excluded from Git. Each report identifies its relevant raw artifacts.
 
