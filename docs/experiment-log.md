@@ -214,4 +214,15 @@ The full-model run used the same 8B weights, FP16 KV, CUDA graph settings, 128 g
 
 At 8K, one layer holds 32 MiB of unique FP16 K and V. Streaming that amount once at the measured 188 GB/s streaming-read reference would take about 179 µs, compared with 216 µs for grouped attention. This scenario suggests room for a focused kernel experiment. It assumes a single read at the streaming rate and omits attention arithmetic, so it neither quantifies actual DRAM traffic nor predicts a wall-clock gain. A grouped Q8_0 variant could also test whether smaller reads translate into speed at this workload.
 
-The elevated launch was canceled before the counter worker ran. This comparison has timings and numerical checks, with DRAM bytes and L2 sector counts pending an elevated CUPTI run. The regular-user failure was the NVIDIA driver permission error `CUPTI_ERROR_INSUFFICIENT_PRIVILEGES`.
+### CUPTI memory counters
+
+The regular-user probe returned the NVIDIA driver permission error `CUPTI_ERROR_INSUFFICIENT_PRIVILEGES`. The elevated follow-up completed both forward and reverse passes. Each range required two CUPTI replay passes. The values below average two measurements per path and depth. L2 read volume is the sector count times 32 bytes. [Raw counter report](../results/attention-counters-20261122T002612Z.json)
+
+| KV depth | Distinct FP16 KV MiB | Rotated DRAM reads, vector → grouped MiB | Rotated L2 read sectors, vector → grouped MiB |
+| --- | ---: | ---: | ---: |
+| 4,096 | 16 | 16.07 → 16.14 | 63.69 → 16.64 |
+| 8,192 | 32 | 32.09 → 32.14 | 125.99 → 32.81 |
+
+Grouped attention cut rotated L2 read-sector volume by about 74% at both depths. DRAM read volume was close to the size of one distinct KV pair on both paths. The vector path requested close to four times the unique bytes from L2, consistent with four query heads sharing each KV head. The results indicate that L2 served most of the repeated reads in this isolated workload.
+
+Repeating the same 4K KV pair reduced DRAM reads to 13.35 MiB on vector and 10.90 MiB on grouped. At 8K, the same-layer result stayed near 32 MiB on both paths. The 4K warm-vector L2 hit-rate metric exceeded 100%, so the interpretation uses read sector and DRAM byte totals. For a custom kernel aimed at DRAM savings, grouped Q8_0 is a more direct next experiment. Compare it with stock Q8_0 on the same populated depth, layout, and cache lead-ins, then check end-to-end decode.
