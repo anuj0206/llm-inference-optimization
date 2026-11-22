@@ -42,22 +42,26 @@ The CUDA components and GGUF weights require several gigabytes of downloads. The
 
 ### Run the custom runtime
 
-The attention harness requires the CUDA CUPTI component. This sequence builds both variants and runs one prompt through grouped Q8_0 attention with ranked n-gram speculation.
+The attention harness requires the CUDA CUPTI component. This sequence builds the combined runtime and calibrates its acceptance-feedback n-gram policy for the local GPU. The grouped Q4_0 launcher uses batch 4,096, microbatch 1,024, and an 8,448-token context by default.
 
 ```powershell
 .\.venv\Scripts\python.exe .\scripts\install_cuda.py --components cuda_cupti
 .\scripts\build-attention-bench.ps1
 .\scripts\build-adaptive-ngram.ps1 -Budget
 . .\scripts\enter-dev.ps1
-python .\scripts\prepare_combined_runtime.py
-.\scripts\run-model.ps1 -Context 8448 -GroupedQ8Attention -AdaptiveNgram
+python .\scripts\calibrate-ngram.py --grouped-q4
+$calibration = Get-ChildItem .\results -Filter 'ngram-cost-grouped-q4-8k-*.json' |
+    Sort-Object Name -Descending | Select-Object -First 1
+.\scripts\run-model.ps1 -GroupedQ4Attention -NgramFeedback -NgramCalibration $calibration.FullName
 ```
 
 ### Reproduce the comparisons
 
+Reuse the calibration from the runtime setup above.
+
 ```powershell
 . .\scripts\enter-dev.ps1
-python .\scripts\benchmark-combined.py
+python .\scripts\benchmark-combined.py --kv q4_0 --calibration $calibration.FullName
 python .\scripts\benchmark-ttft.py --sweep-microbatch
 ```
 

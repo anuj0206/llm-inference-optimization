@@ -10,6 +10,8 @@ from local_llama_server import local_server, request
 PROMPT_TOKENS = 8192
 OUTPUT_TOKENS = 128
 CONTEXT_CAPACITY = 8448
+TUNED_BATCH = 4096
+TUNED_MICROBATCH = 1024
 NGRAM_ARGS = ["--spec-ngram-simple-size-n", "6", "--spec-ngram-simple-size-m", "8"]
 DRAFT_METRICS = {
     "drafted": "llamacpp:spec_decode_num_draft_tokens_total",
@@ -142,12 +144,12 @@ def measured_server(args, log_path, environment, session):
         raise RuntimeError(f"Full GPU offload not confirmed: inspect {log_path}")
 
 
-def token_comparisons(fixture, sessions):
+def token_comparisons(fixture, sessions, *, reference_mode="none"):
     comparisons = {}
     for case in fixture:
         rows = [(session["mode"], row["tokens"]) for session in sessions
                 for row in session["measurements"] if row["case"] == case]
-        reference = next(tokens for mode, tokens in rows if mode == "none")
+        reference = next(tokens for mode, tokens in rows if mode == reference_mode)
         comparisons[case] = {
             "all_runs_match": all(tokens == reference for _, tokens in rows),
             "first_mismatch_indices": [

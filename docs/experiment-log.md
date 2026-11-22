@@ -491,3 +491,31 @@ Isolated timings average two rotated session medians per path and depth. They in
 The Python fixture matched all 128 generated token IDs at both depths. The prose memo diverged at token 42 at 4K and token 16 at 8K, with stable continuations across repeats within each path. The numerical checks cover the attention operation. These two prompts establish token agreement only for the Python fixture.
 
 The first isolated run stopped before measurement because Windows could not find the installed CUPTI DLL. The development shell now includes the toolkit's CUPTI directory. [Initial harness startup result](../results/attention-isolated-q4-20261122T185013Z.json)
+
+## 2026-11-22 Grouped Q4_0 with tuned batching and feedback n-gram
+
+The combined runtime uses stock integer prefill with batch 4,096 and microbatch 1,024. Both K and V use Q4_0. Single-token decode can use grouped Q4_0 attention. Verification of multiple tokens uses the existing Flash Attention dispatcher. The `budget` n-gram policy uses verifier acceptance to update the draft cap and pause drafting when it is unprofitable.
+
+The grouped calibration times one target pass with zero through eight draft tokens at 8K. It measures serial decode with grouped Q4_0 and forces length-controlled rejected drafts to measure verification. The cost table takes the median for each length and keeps estimates nondecreasing. Both speculative arms use the same table to isolate the attention toggle.
+
+The benchmark holds the checkpoint, Q4_0 cache, tuned batching, 8,448-token slot, and three archived prompts fixed. It compares stock attention and grouped attention with feedback off and on. Each request processes 8,192 fresh prompt tokens and generates 128 greedy tokens. The second pass reverses both configuration and prompt order.
+
+```powershell
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-combined.py --kv q4_0 --calibration .\results\ngram-cost-grouped-q4-8k-20261122T190901Z.json
+.\scripts\run-model.ps1 -GroupedQ4Attention -NgramFeedback
+```
+
+The launcher uses the saved calibration for this build. After rebuilding, run `python .\scripts\calibrate-ngram.py --grouped-q4`. Pass the new report to the benchmark with `--calibration` and to the launcher with `-NgramCalibration`. To use the tuned grouped Q4_0 setup with ordinary decode, launch with `-GroupedQ4Attention`.
+
+| 8K workload | Stock attention | Grouped Q4_0 | Stock + feedback | Grouped Q4_0 + feedback |
+| --- | ---: | ---: | ---: | ---: |
+| Repetitive Python | 28.55 tok/s | 30.75 tok/s | 82.96 tok/s | 83.44 tok/s |
+| Project memo | 28.30 tok/s | 30.73 tok/s | 28.50 tok/s | 36.06 tok/s |
+| Fiction opening | 28.48 tok/s | 30.72 tok/s | 26.91 tok/s | 29.12 tok/s |
+
+Values are mean server decode throughput over two runs. All 24 requests completed on AC with 37/37 layers offloaded. Every session sampled a peak of 5,146 MiB. The calibrated pass costs ranged from 32.46 ms for ordinary grouped decode to 47.48 ms for verifying eight rejected drafts. [Cost calibration](../results/ngram-cost-grouped-q4-8k-20261122T190901Z.json) · [Raw timings, tokens, and verification counts](../results/attention-ngram-q4-8k-20261122T191145Z.json)
+
+With grouped attention, feedback accepted 96 of 233 drafted tokens per Python run and 34 of 152 per memo run. Relative to grouped-only decode, that was 2.71× as fast for Python and 17.4% faster for the memo. Including prefill, server processing time fell from 9.78 to 7.24 s for Python and from 9.94 to 9.17 s for the memo. Fiction accepted zero of 42 drafts per run, and decode was 5.2% slower with feedback.
+
+All four configurations generated identical Python token IDs. Adding feedback to grouped Q4_0 changed the memo continuation at token 19 and the fiction continuation at token 25. Both changes repeated in reverse order. Feedback remains a launcher option so the same tuned runtime can use ordinary grouped decode.
