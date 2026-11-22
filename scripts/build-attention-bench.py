@@ -35,7 +35,34 @@ def main():
     bin_dir.mkdir(parents=True, exist_ok=True)
     manifest.unlink(missing_ok=True)
     cuda = source / "ggml/src/ggml-cuda"
+    kernel = Path(__file__).resolve().parent.parent / "benchmarks/attention/grouped-q8.cuh"
+    shutil.copy2(kernel, target / kernel.name)
     text = (cuda / "fattn.cu").read_text(encoding="utf-8")
+    text = replace_once(text, "enum best_fattn_kernel {", '#include "grouped-q8.cuh"\n\nenum best_fattn_kernel {')
+    text = replace_once(text, "    BEST_FATTN_KERNEL_MMA_F16 = 400,",
+                        "    BEST_FATTN_KERNEL_MMA_F16 = 400,\n    BEST_FATTN_KERNEL_GROUPED_Q8 = 500,")
+    text = replace_once(text, "    const int cc = ggml_cuda_info().devices[device].cc;\n\n    switch (K->ne[0])",
+                        """    const int cc = ggml_cuda_info().devices[device].cc;
+    if (q8_gqa_supported(dst, cc)) {
+        return BEST_FATTN_KERNEL_GROUPED_Q8;
+    }
+
+    switch (K->ne[0])""")
+    text = replace_once(text, "        case BEST_FATTN_KERNEL_NONE:\n            break;\n    }",
+                        "        case BEST_FATTN_KERNEL_NONE:\n        case BEST_FATTN_KERNEL_GROUPED_Q8:\n            break;\n    }")
+    text = replace_once(text, """        case BEST_FATTN_KERNEL_MMA_F16:
+            ggml_cuda_flash_attn_ext_mma_f16(ctx, dst);
+            break;""", """        case BEST_FATTN_KERNEL_MMA_F16:
+            ggml_cuda_flash_attn_ext_mma_f16(ctx, dst);
+            break;
+        case BEST_FATTN_KERNEL_GROUPED_Q8: {
+            static const bool announced = [] {
+                GGML_LOG_INFO("LLMOptimization: enabled custom grouped Q8_0 decode attention\\n");
+                return true;
+            }();
+            (void) announced;
+            launch_q8_gqa(ctx, dst);
+        } break;""")
     marker = """!(gqa_ratio > 4 && (Q->ne[0] >= 256 || K->ne[1] >= 8192))) {
                     return BEST_FATTN_KERNEL_VEC;"""
     text = replace_once(text, marker, """!(gqa_ratio > 4 && (Q->ne[0] >= 256 || K->ne[1] >= 8192))) {
@@ -60,6 +87,7 @@ extern "C" __declspec(dllexport) const char * attention_bench_path(ggml_tensor *
     switch (ggml_cuda_get_best_fattn_kernel(ggml_cuda_get_device(), output)) {
         case BEST_FATTN_KERNEL_VEC: return "vector";
         case BEST_FATTN_KERNEL_MMA_F16: return "grouped_mma";
+        case BEST_FATTN_KERNEL_GROUPED_Q8: return "grouped_q8";
         default: return "other";
     }
 }
@@ -103,9 +131,11 @@ extern "C" __declspec(dllexport) void attention_bench_launch(ggml_backend_t back
         if dll.name != "ggml-cuda.dll":
             shutil.copy2(dll, bin_dir / dll.name)
     shutil.copy2(stock_bin / "llama-server.exe", bin_dir / "llama-server.exe")
+    shutil.copy2(stock_bin / "llama-cli.exe", bin_dir / "llama-cli.exe")
     manifest.write_text(json.dumps({
         "source_commit": revision,
         "dispatcher_sha256": sha256(candidate),
+        "grouped_q8_sha256": sha256(kernel),
         "stock_cuda_sha256": sha256(stock_bin / "ggml-cuda.dll"),
         "experiment_cuda_sha256": sha256(bin_dir / "ggml-cuda.dll"),
     }, indent=2) + "\n", encoding="utf-8")

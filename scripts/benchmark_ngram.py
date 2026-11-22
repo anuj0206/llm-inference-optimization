@@ -108,10 +108,10 @@ def completion(base, tokens, *, prompt_length=PROMPT_TOKENS):
     }
 
 
-def server_args(executable, model, mode, *, context_capacity=CONTEXT_CAPACITY):
+def server_args(executable, model, mode, *, context_capacity=CONTEXT_CAPACITY, cache_type="f16"):
     return [str(executable), "-m", str(model), "-ngl", "99", "-c", str(context_capacity),
             "-np", "1", "-b", "512", "-ub", "128", "-t", "8", "-fa", "on",
-            "-ctk", "f16", "-ctv", "f16", "--fit", "off", "--metrics", "-lv", "4", "--spec-type", mode]
+            "-ctk", cache_type, "-ctv", cache_type, "--fit", "off", "--metrics", "-lv", "4", "--spec-type", mode]
 
 
 @contextmanager

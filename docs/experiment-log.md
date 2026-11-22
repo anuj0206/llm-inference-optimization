@@ -226,3 +226,32 @@ The regular-user probe returned the NVIDIA driver permission error `CUPTI_ERROR_
 Grouped attention cut rotated L2 read-sector volume by about 74% at both depths. DRAM read volume was close to the size of one distinct KV pair on both paths. The vector path requested close to four times the unique bytes from L2, consistent with four query heads sharing each KV head. The results indicate that L2 served most of the repeated reads in this isolated workload.
 
 Repeating the same 4K KV pair reduced DRAM reads to 13.35 MiB on vector and 10.90 MiB on grouped. At 8K, the same-layer result stayed near 32 MiB on both paths. The 4K warm-vector L2 hit-rate metric exceeded 100%, so the interpretation uses read sector and DRAM byte totals. For a custom kernel aimed at DRAM savings, grouped Q8_0 is a more direct next experiment. Compare it with stock Q8_0 on the same populated depth, layout, and cache lead-ins, then check end-to-end decode.
+
+## 2026-11-21 Custom grouped Q8_0 decode attention
+
+The custom CUDA path handles batch-one decode on Ada, with 128-dimensional heads and four query heads per KV head. Both K and V use the pinned llama.cpp Q8_0 layout. The dispatcher requires compatible strides and a dense mask, and sends prefill, multi-token verification, and other shapes through the existing CUDA dispatcher. The experiment selects the new path through `LLM_OPT_ATTENTION_Q8=1`. [Kernel source](../benchmarks/attention/grouped-q8.cuh)
+
+Each block processes one KV head and one 128-position split. Four warps cooperate to stage each 32-position packed tile in shared memory, then each warp computes one query head. The QK dot product uses the stock temporary Q8_1 query quantization and packed DP4A instructions. Each warp maintains its own online softmax and accumulates the weighted Q8_0 values in FP32. A second kernel merges split partials using their maxima and normalization sums.
+
+The compiled attention block uses 56 registers per thread and 9,856 bytes of static shared memory per block. The merge uses 40 registers per thread. The resource report shows zero local memory for both kernels.
+
+The harness packs identical seeded KV inputs for the two kernels and checks against a double-precision CPU reference using dequantized Q8_0 KV and the vector path's scaled, quantized query. Both paths pass dense and masked tests at both depths. The masked case hides an entire split and a partial suffix. Timing rotates eight KV pairs and reverses depth and implementation order. The full-model comparison keeps the model, Q8_0 cache format, prompts, and sampling settings fixed.
+
+```powershell
+.\scripts\build-attention-bench.ps1
+. .\scripts\enter-dev.ps1
+python .\scripts\benchmark-attention.py isolated --kv q8_0
+python .\scripts\benchmark-attention.py decode --kv q8_0
+.\scripts\run-model.ps1 -GroupedQ8Attention -Context 8448
+```
+
+The launcher selects Q8_0 for both caches. The kernel becomes eligible when attention reaches at least 4,096 KV rows.
+
+| KV depth | Stock attention | Grouped attention | Attention latency reduction | Stock decode | Grouped decode |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4K | 126.94 µs | 81.57 µs | 35.7% | 31.46 tok/s | 32.61 tok/s |
+| 8K | 237.36 µs | 169.72 µs | 28.5% | 28.54 tok/s | 30.05 tok/s |
+
+The isolated latencies average four rotated session medians per depth and path. Every grouped session was faster than every stock session at each depth. The maximum absolute error against the CPU reference was below 2.2e-8 across both kernels and mask cases. [First isolated run](../results/attention-isolated-q8-20261122T003735Z.json) · [Isolated repeat](../results/attention-isolated-q8-20261122T004109Z.json)
+
+The full-model comparison completed 16 requests on AC. All sessions reported 37/37 layers on CUDA and peak sampled VRAM was equal across paths at each depth, 4,933 MiB at 4K and 5,255 MiB at 8K. The decode gains were 3.6% and 5.3%, respectively. Both 8K fixtures and the 4K Python fixture matched greedy token IDs. At 4K the prose memo diverged at token 118 in both grouped runs. The CLI launcher also confirmed custom dispatch with a 4,629-token prompt and Q8_0 K and V. [Full-model results](../results/attention-decode-q8-20261122T003758Z.json)

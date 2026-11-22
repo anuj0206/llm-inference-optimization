@@ -36,8 +36,8 @@ void cuda_check(cudaError_t status) {
 }
 
 std::vector<float> attention_reference(int depth, const std::vector<float> & query,
-                                       const std::vector<ggml_fp16_t> & key,
-                                       const std::vector<ggml_fp16_t> & value) {
+                                       const std::vector<float> & key, const std::vector<float> & value,
+                                       const std::vector<ggml_fp16_t> & mask) {
     std::vector<float> output(query.size());
     std::vector<double> scores(depth);
     for (int head = 0; head < query_heads; ++head) {
@@ -46,9 +46,9 @@ std::vector<float> attention_reference(int depth, const std::vector<float> & que
             double dot = 0;
             const auto offset = (i * kv_heads + group) * head_dim;
             for (int d = 0; d < head_dim; ++d) {
-                dot += double(query[head * head_dim + d]) * ggml_fp16_to_fp32(key[offset + d]);
+                dot += double(query[head * head_dim + d]) * key[offset + d];
             }
-            scores[i] = dot / std::sqrt(double(head_dim));
+            scores[i] = dot + ggml_fp16_to_fp32(mask[i]);
         }
         const auto shift = *std::max_element(scores.begin(), scores.end());
         std::array<double, head_dim> sum{};
@@ -58,7 +58,7 @@ std::vector<float> attention_reference(int depth, const std::vector<float> & que
             const auto offset = (i * kv_heads + group) * head_dim;
             normalization += weight;
             for (int d = 0; d < head_dim; ++d) {
-                sum[d] += weight * ggml_fp16_to_fp32(value[offset + d]);
+                sum[d] += weight * value[offset + d];
             }
         }
         for (int d = 0; d < head_dim; ++d) {
@@ -66,6 +66,24 @@ std::vector<float> attention_reference(int depth, const std::vector<float> & que
         }
     }
     return output;
+}
+
+std::vector<float> reference_query(const std::vector<float> & query, bool q8) {
+    auto scaled = query;
+    const float scale = 1.0f / std::sqrt(float(head_dim));
+    for (auto & item : scaled) item *= scale;
+    if (q8) {
+        // Mirror the vector path's temporary Q8_1 query without a half-rounded block scale.
+        for (std::size_t i = 0; i < scaled.size(); i += 32) {
+            float peak = 0.0f;
+            for (std::size_t j = i; j < i + 32; ++j) peak = std::max(peak, std::abs(scaled[j]));
+            const float delta = peak / 127;
+            if (delta > 0.0f) {
+                for (std::size_t j = i; j < i + 32; ++j) scaled[j] = std::round(scaled[j] / delta) * delta;
+            }
+        }
+    }
+    return scaled;
 }
 
 json profile_traffic(ggml_backend_t backend, cudaStream_t stream, const std::array<ggml_tensor *, layers> & outputs) {
@@ -135,7 +153,7 @@ json profile_traffic(ggml_backend_t backend, cudaStream_t stream, const std::arr
     return trials;
 }
 
-json run(int depth, const std::string & mode, bool counters) {
+json run(int depth, const std::string & mode, ggml_type type, bool counters) {
     cuda_check(cudaSetDevice(0));
     std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cuda_init(0), ggml_backend_free);
     if (!backend) {
@@ -152,12 +170,12 @@ json run(int depth, const std::string & mode, bool counters) {
     std::array<ggml_tensor *, layers> queries{}, keys{}, values{}, outputs{};
     for (int i = 0; i < layers; ++i) {
         queries[i] = ggml_new_tensor_4d(ctx.get(), GGML_TYPE_F32, head_dim, 1, query_heads, 1);
-        keys[i] = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, head_dim * kv_heads, depth);
-        values[i] = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, head_dim * kv_heads, depth);
+        keys[i] = ggml_new_tensor_2d(ctx.get(), type, head_dim * kv_heads, depth);
+        values[i] = ggml_new_tensor_2d(ctx.get(), type, head_dim * kv_heads, depth);
         // llama.cpp stores each token's KV heads together, then presents permuted views to Flash Attention.
         const auto view = [&](ggml_tensor * tensor) {
             return ggml_view_4d(ctx.get(), tensor, head_dim, depth, kv_heads, 1,
-                                tensor->nb[1], head_dim * sizeof(ggml_fp16_t), ggml_nbytes(tensor), 0);
+                                tensor->nb[1], ggml_row_size(type, head_dim), ggml_nbytes(tensor), 0);
         };
         outputs[i] = ggml_flash_attn_ext(ctx.get(), queries[i], view(keys[i]), view(values[i]), mask,
                                        1.0f / std::sqrt(float(head_dim)), 0.0f, 0.0f);
@@ -175,41 +193,62 @@ json run(int depth, const std::string & mode, bool counters) {
     std::mt19937 rng(42);
     std::normal_distribution<float> normal(0.0f, 0.8f);
     std::vector<float> query(query_heads * head_dim);
-    std::vector<ggml_fp16_t> key(kv_heads * depth * head_dim), value(key.size()), zeros(depth, 0);
+    std::vector<float> key(kv_heads * depth * head_dim), value(key.size());
+    std::vector<ggml_fp16_t> mask_values(depth, 0);
+    std::vector<uint8_t> packed_k(ggml_nbytes(keys.front())), packed_v(packed_k.size());
     for (auto & item : query) item = normal(rng);
-    for (auto & item : key) item = ggml_fp32_to_fp16(normal(rng));
-    for (auto & item : value) item = ggml_fp32_to_fp16(normal(rng));
+    for (auto & item : key) item = normal(rng);
+    for (auto & item : value) item = normal(rng);
+    const auto * traits = ggml_get_type_traits(type);
+    traits->from_float_ref(key.data(), packed_k.data(), key.size());
+    traits->from_float_ref(value.data(), packed_v.data(), value.size());
+    traits->to_float(packed_k.data(), key.data(), key.size());
+    traits->to_float(packed_v.data(), value.data(), value.size());
     for (int i = 0; i < layers; ++i) {
         ggml_backend_tensor_set(queries[i], query.data(), 0, ggml_nbytes(queries[i]));
-        ggml_backend_tensor_set(keys[i], key.data(), 0, ggml_nbytes(keys[i]));
-        ggml_backend_tensor_set(values[i], value.data(), 0, ggml_nbytes(values[i]));
+        ggml_backend_tensor_set(keys[i], packed_k.data(), 0, packed_k.size());
+        ggml_backend_tensor_set(values[i], packed_v.data(), 0, packed_v.size());
     }
-    ggml_backend_tensor_set(mask, zeros.data(), 0, ggml_nbytes(mask));
 
-    attention_bench_launch(backend.get(), outputs.front());
-    cuda_check(cudaStreamSynchronize(stream));
-    std::vector<float> actual(query.size());
-    ggml_backend_tensor_get(outputs.front(), actual.data(), 0, ggml_nbytes(outputs.front()));
-    const auto reference = attention_reference(depth, query, key, value);
-    double max_error = 0, error_sq = 0, reference_sq = 0;
-    for (std::size_t i = 0; i < actual.size(); ++i) {
-        if (!std::isfinite(actual[i])) {
-            throw std::runtime_error("Attention produced a non-finite output.");
+    const auto scaled_query = reference_query(query, type == GGML_TYPE_Q8_0);
+    const auto check_attention = [&] {
+        ggml_backend_tensor_set(mask, mask_values.data(), 0, ggml_nbytes(mask));
+        attention_bench_launch(backend.get(), outputs.front());
+        cuda_check(cudaStreamSynchronize(stream));
+        std::vector<float> actual(query.size());
+        ggml_backend_tensor_get(outputs.front(), actual.data(), 0, ggml_nbytes(outputs.front()));
+        const auto reference = attention_reference(depth, scaled_query, key, value, mask_values);
+        double max_error = 0, error_sq = 0, reference_sq = 0;
+        for (std::size_t i = 0; i < actual.size(); ++i) {
+            if (!std::isfinite(actual[i])) {
+                throw std::runtime_error("Attention produced a non-finite output.");
+            }
+            const double error = actual[i] - reference[i];
+            max_error = std::max(max_error, std::abs(error));
+            error_sq += error * error;
+            reference_sq += double(reference[i]) * reference[i];
         }
-        const double error = actual[i] - reference[i];
-        max_error = std::max(max_error, std::abs(error));
-        error_sq += error * error;
-        reference_sq += double(reference[i]) * reference[i];
-    }
-    const double relative_rms = std::sqrt(error_sq / reference_sq);
-    if (max_error > 0.002 || relative_rms > 0.03) {
-        throw std::runtime_error("Attention disagreed with the CPU reference. Max error " +
-                                 std::to_string(max_error) + "; relative RMS " + std::to_string(relative_rms));
-    }
-    json result = {
-        {"context", depth}, {"path", mode}, {"logical_kv_bytes", (ggml_nbytes(keys.front()) + ggml_nbytes(values.front()))},
-        {"distinct_kv_pairs", layers}, {"max_abs_error", max_error}, {"relative_rms_error", relative_rms},
+        const double relative_rms = std::sqrt(error_sq / reference_sq);
+        if (max_error > 0.002 || relative_rms > 0.03) {
+            throw std::runtime_error("Attention disagreed with the CPU reference. Max error " +
+                                     std::to_string(max_error) + "; relative RMS " + std::to_string(relative_rms));
+        }
+        return json{{"max_abs_error", max_error}, {"relative_rms_error", relative_rms}};
     };
+    const auto dense = check_attention();
+    json result = {
+        {"context", depth}, {"path", mode}, {"kv_type", ggml_type_name(type)},
+        {"logical_kv_bytes", packed_k.size() + packed_v.size()}, {"distinct_kv_pairs", layers},
+        {"max_abs_error", dense.at("max_abs_error")}, {"relative_rms_error", dense.at("relative_rms_error")},
+    };
+    if (type == GGML_TYPE_Q8_0) {
+        const auto masked = ggml_fp32_to_fp16(-INFINITY);
+        std::fill_n(mask_values.begin() + 128, 128, masked);
+        std::fill(mask_values.end() - 67, mask_values.end(), masked);
+        result["masked_reference"] = check_attention();
+        std::fill(mask_values.begin(), mask_values.end(), 0);
+        ggml_backend_tensor_set(mask, mask_values.data(), 0, ggml_nbytes(mask));
+    }
     if (counters) {
         result["traffic"] = profile_traffic(backend.get(), stream, outputs);
         return result;
@@ -249,15 +288,18 @@ json run(int depth, const std::string & mode, bool counters) {
 
 int main(int argc, char ** argv) {
     try {
-        if (argc < 4 || argc > 5 || (argc == 5 && std::string(argv[4]) != "--counters")) {
-            throw std::runtime_error("Usage: attention-bench <output.json> <4096|8192> <vector|grouped_mma> [--counters]");
+        if (argc < 5 || argc > 6 || (argc == 6 && std::string(argv[5]) != "--counters")) {
+            throw std::runtime_error("Usage: attention-bench <output.json> <4096|8192> <path> <f16|q8_0> [--counters]");
         }
         const auto depth = std::stoi(argv[2]);
         const std::string mode = argv[3];
-        if ((depth != 4096 && depth != 8192) || (mode != "vector" && mode != "grouped_mma")) {
+        const std::string cache = argv[4];
+        const auto type = cache == "q8_0" ? GGML_TYPE_Q8_0 : GGML_TYPE_F16;
+        if ((depth != 4096 && depth != 8192) || (cache != "f16" && cache != "q8_0") ||
+                (mode != "vector" && mode != (type == GGML_TYPE_Q8_0 ? "grouped_q8" : "grouped_mma"))) {
             throw std::runtime_error("Use a tested depth and CUDA path.");
         }
-        const auto result = run(depth, mode, argc == 5);
+        const auto result = run(depth, mode, type, argc == 6);
         std::ofstream stream(argv[1]);
         if (!(stream << result.dump(2) << '\n')) {
             throw std::runtime_error("Could not write the result JSON.");
